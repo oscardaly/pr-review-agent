@@ -27,6 +27,7 @@ export type KnowledgeBase = {
   ) => Promise<Document[]>;
   documentationLinksFor: (topic: string) => DocumentationLink[];
   learnedLessons: () => string;
+  codeWritingSkill: () => string;
 };
 
 const TOPIC_BY_FILENAME: Record<string, GuidelineTopic> = {
@@ -74,16 +75,29 @@ const loadLearnedLessons = async (knowledgePath: string): Promise<string> => {
   }
 };
 
+// Vendored from https://github.com/DietrichGebert/ponytail (MIT) — governs suggestion code.
+const loadCodeWritingSkill = async (knowledgePath: string): Promise<string> => {
+  try {
+    return await readFile(
+      join(knowledgePath, "skills", "ponytail.md"),
+      "utf-8",
+    );
+  } catch {
+    return "";
+  }
+};
 
 export const loadKnowledgeBase = async (
   knowledgePath: string,
   embeddings: Embeddings,
 ): Promise<KnowledgeBase> => {
-  const [chunks, documentationLinks, lessons] = await Promise.all([
-    loadGuidelineChunks(knowledgePath),
-    loadDocumentationLinks(knowledgePath),
-    loadLearnedLessons(knowledgePath),
-  ]);
+  const [chunks, documentationLinks, lessons, codeWritingSkill] =
+    await Promise.all([
+      loadGuidelineChunks(knowledgePath),
+      loadDocumentationLinks(knowledgePath),
+      loadLearnedLessons(knowledgePath),
+      loadCodeWritingSkill(knowledgePath),
+    ]);
   const vectorStore = await MemoryVectorStore.fromDocuments(chunks, embeddings);
 
   return {
@@ -94,5 +108,6 @@ export const loadKnowledgeBase = async (
     documentationLinksFor: (topic) =>
       documentationLinks.filter((link) => link.topics.includes(topic)),
     learnedLessons: () => lessons,
+    codeWritingSkill: () => codeWritingSkill,
   };
 };

@@ -61,4 +61,17 @@ describe("loadKnowledgeBase", () => {
     expect(knowledgeBase.documentationLinksFor("no-such-topic")).toEqual([]);
     expect(knowledgeBase.learnedLessons()).toContain("## Lesson:");
   });
+
+  test("serves the vendored ponytail code-writing skill", async () => {
+    const knowledgeBase = await loadKnowledgeBase(
+      knowledgePath,
+      new HashEmbeddings(),
+    );
+
+    const codeWritingSkill = knowledgeBase.codeWritingSkill();
+
+    expect(codeWritingSkill).toContain("# Ponytail");
+    expect(codeWritingSkill).toContain("## The ladder");
+    expect(codeWritingSkill).toContain("## When NOT to be lazy");
+  });
 });
