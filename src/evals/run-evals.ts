@@ -1,0 +1,36 @@
+import { EVAL_DATASET } from "./dataset";
+import { scoreExample, type EvalScore } from "./evaluators";
+import { buildEvalGraph, runExampleThroughGraph } from "./run-graph";
+import { runOnLangSmith } from "./langsmith-runner";
+
+const formatScores = (scores: EvalScore[]): string =>
+  scores.map((score) => `${score.key}=${score.score.toFixed(2)}`).join("  ");
+
+const runLocally = async (): Promise<void> => {
+  console.log("LANGSMITH_API_KEY not set — running evals locally.\n");
+  const graph = await buildEvalGraph();
+  const allScores: EvalScore[] = [];
+
+  for (const example of EVAL_DATASET) {
+    const outputs = await runExampleThroughGraph(
+      graph,
+      { diff: example.diff, metadata: example.metadata },
+      `eval:${example.name}`,
+    );
+    const scores = scoreExample(example.expected, outputs);
+    allScores.push(...scores);
+    console.log(`  ${example.name.padEnd(40)} ${formatScores(scores)}`);
+  }
+
+  const meanScore =
+    allScores.reduce((sum, score) => sum + score.score, 0) / allScores.length;
+  console.log(
+    `\nMean score across ${EVAL_DATASET.length} examples: ${meanScore.toFixed(2)}`,
+  );
+};
+
+if (process.env.LANGSMITH_API_KEY) {
+  await runOnLangSmith();
+} else {
+  await runLocally();
+}
