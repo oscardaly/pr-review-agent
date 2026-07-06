@@ -1,0 +1,15 @@
+{
+  "comment": {
+    "reviewer": "style",
+    "file": "src/lib/exportHelpers.ts",
+    "line": 3,
+    "severity": "info",
+    "category": "functions",
+    "title": "Use .map()/.join() instead of a manual for-loop with string concatenation",
+    "body": "The team guideline prefers declarative array transforms over index-based loops that build strings by concatenation.",
+    "takeaway": "Reach for .map()/.filter()/.join() before writing an index-based loop.",
+    "citations": [],
+    "guideline": "Small functions, small files"
+  },
+  "humanReply": "You're wrong here — this loop is in a hot path that formats exports with up to 500k rows, and we deliberately avoid building intermediate arrays. Perf-sensitive loops are exempt from the declarative-transforms preference."
+}

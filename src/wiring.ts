@@ -2,6 +2,7 @@ import { loadConfig, type AgentConfig } from "./config";
 import { createChatModel, createEmbeddings } from "./models";
 import { loadKnowledgeBase } from "./rag/knowledge-base";
 import type { ReviewGraphDependencies } from "./review/dependencies";
+import type { FeedbackGraphDependencies } from "./feedback/graph";
 import { createFileSystemGithubClient } from "./tools/github";
 import { scanWithBuiltinRules } from "./tools/semgrep";
 
@@ -17,4 +18,12 @@ export const buildReviewDependencies = async (
   github: createFileSystemGithubClient(config.outputPath),
   semgrepScanner: scanWithBuiltinRules,
   config,
+});
+
+export const buildFeedbackDependencies = (
+  config: AgentConfig = loadConfig(),
+): FeedbackGraphDependencies => ({
+  model: createChatModel(config),
+  github: createFileSystemGithubClient(config.outputPath),
+  knowledgePath: config.knowledgePath,
 });
