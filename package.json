@@ -1,0 +1,28 @@
+{
+  "name": "pr-review-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "LangGraph-powered PR review agent with RAG guidelines, security scanning, comment validation, and a self-improvement loop",
+  "scripts": {
+    "review": "bun src/cli.ts review",
+    "feedback": "bun src/cli.ts feedback",
+    "eval": "bun src/evals/run-evals.ts",
+    "demo": "bun src/cli.ts review --diff fixtures/sample-pr.diff --pr fixtures/sample-pr.json",
+    "test": "bun test src",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "@langchain/anthropic": "1.5.1",
+    "@langchain/core": "1.2.1",
+    "@langchain/langgraph": "1.4.7",
+    "@langchain/openai": "1.5.3",
+    "langchain": "1.5.2",
+    "langsmith": "0.7.15",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.6",
+    "typescript": "5.9.2"
+  }
+}
