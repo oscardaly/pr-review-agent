@@ -53,17 +53,17 @@ To point it at another repo/company: `PR_AGENT_USER_DOCS_PATH=<their docs>`, rep
 ```mermaid
 flowchart TD
     START((start)) --> ingest["ingest\nparse diff · redact secrets/PII"]
-    ingest -- "reviewable changes" --> style["style_reviewer\nRAG: code-style + clean-code"]
+    ingest -- "reviewable changes" --> styl["style_reviewer\nRAG: code-style + clean-code"]
     ingest -- "reviewable changes" --> arch["architecture_reviewer\nRAG: clean-architecture"]
     ingest -- "reviewable changes" --> sec["security_reviewer\nsemgrep tool → RAG: OWASP Top 10"]
     ingest -- "reviewable changes" --> docs["docs_reviewer\nreads user docs from env path"]
     ingest -- "empty / delete-only diff" --> publish
-    style --> validate["validate_comments\nsubagent cross-examines every draft\n(+ learned lessons from past rejections)"]
+    styl --> validate["validate_comments\nsubagent cross-examines every draft\n(+ learned lessons from past rejections)"]
     arch --> validate
     sec --> validate
     docs --> validate
     validate --> publish["publish_review\nrender markdown · post via GitHub client"]
-    publish --> END((end))
+    publish --> END(("end"))
 ```
 
 **How state moves.** `ingest` parses the raw diff into typed files/hunks with line numbers, redacts secrets and PII in place, then _clears the raw diff from state_ — every later node (and every LangSmith trace of it) works on the redacted view. A conditional edge skips straight to `publish_review` if there's nothing reviewable. The four reviewers run **in parallel** in one superstep, each appending to `draftComments` via a concat reducer — that's the only shared-state merge in the graph, so there's nothing to race. `validate_comments` joins the fan-in (array edge = wait for all), deduplicates, and judges each draft independently; only comments that survive with confidence ≥ threshold reach `publish_review`.
@@ -73,7 +73,7 @@ The **feedback graph** is a second, smaller graph:
 ```mermaid
 flowchart LR
     START((start)) --> classify["classify_reply"]
-    classify -- rejection --> lesson["record_lesson"] --> pr["open_improvement_pr"] --> END((end))
+    classify -- rejection --> lesson["record_lesson"] --> pr["open_improvement_pr"] --> END(("end"))
     classify -- "agreement / question" --> END
 ```
 
