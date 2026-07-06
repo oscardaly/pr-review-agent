@@ -1,0 +1,48 @@
+diff --git a/src/app/api/export/route.ts b/src/app/api/export/route.ts
+new file mode 100644
+--- /dev/null
++++ b/src/app/api/export/route.ts
+@@ -0,0 +1,21 @@
++import { NextResponse } from "next/server";
++import { Client } from "pg";
++import sgMail from "@sendgrid/mail";
++
++sgMail.setApiKey("SG.x8kfj2n1qPzW9vLmT3RbDe.4nYw7cKq0sHtG5mXaJdV8pRfUuZbCeO2iLgA6hEyMk1o");
++
++export const GET = async (request: Request) => {
++  const url = new URL(request.url);
++  const customerId = url.searchParams.get("customerId");
++  const format = url.searchParams.get("format");
++
++  const client = new Client({ connectionString: process.env.DATABASE_URL });
++  await client.connect();
++  const result = await client.query(
++    `SELECT * FROM donations WHERE customer_id = '${customerId}' ORDER BY created_at DESC`
++  );
++
++  const rows = result.rows;
++  await sgMail.send({ to: "exports@listaid.example", subject: "Export ready", text: `${rows.length} rows` });
++  return NextResponse.json({ rows, format });
++};
+diff --git a/src/lib/exportHelpers.ts b/src/lib/exportHelpers.ts
+new file mode 100644
+--- /dev/null
++++ b/src/lib/exportHelpers.ts
+@@ -0,0 +1,10 @@
++export const fmt = (d: unknown[], t: string) => {
++  let s = "";
++  for (let i = 0; i < d.length; i++) {
++    if (i > 500) break;
++    s += JSON.stringify(d[i]) + (t === "csv" ? "," : "\n");
++  }
++  return s;
++};
+diff --git a/src/cli/flags.ts b/src/cli/flags.ts
+--- a/src/cli/flags.ts
++++ b/src/cli/flags.ts
+@@ -3,6 +3,6 @@ export const CLI_FLAGS = {
+   output: { type: "string", description: "Output directory" },
+-  verbose: { type: "boolean", description: "Print detailed progress" },
++  logLevel: { type: "string", description: "One of: quiet, normal, debug" },
+   dryRun: { type: "boolean", description: "Run without writing files" },
+ };
