@@ -1,0 +1,57 @@
+[
+  {
+    "title": "TypeScript Handbook — Everyday Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html",
+    "topics": ["style", "clean-code"]
+  },
+  {
+    "title": "TypeScript Handbook — Narrowing",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html",
+    "topics": ["style", "clean-code"]
+  },
+  {
+    "title": "Next.js Docs — Route Handlers",
+    "url": "https://nextjs.org/docs/app/building-your-application/routing/route-handlers",
+    "topics": ["architecture", "security"]
+  },
+  {
+    "title": "Next.js Docs — Server and Client Components",
+    "url": "https://nextjs.org/docs/app/building-your-application/rendering/server-components",
+    "topics": ["architecture", "style"]
+  },
+  {
+    "title": "React Docs — dangerouslySetInnerHTML",
+    "url": "https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html",
+    "topics": ["security"]
+  },
+  {
+    "title": "OWASP Top 10",
+    "url": "https://owasp.org/Top10/",
+    "topics": ["security"]
+  },
+  {
+    "title": "OWASP Cheat Sheet — SQL Injection Prevention",
+    "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
+    "topics": ["security"]
+  },
+  {
+    "title": "OWASP Cheat Sheet — XSS Prevention",
+    "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+    "topics": ["security"]
+  },
+  {
+    "title": "Node.js Docs — child_process security considerations",
+    "url": "https://nodejs.org/api/child_process.html",
+    "topics": ["security"]
+  },
+  {
+    "title": "LangChain JS Docs",
+    "url": "https://docs.langchain.com/oss/javascript/langchain/overview",
+    "topics": ["architecture", "clean-code"]
+  },
+  {
+    "title": "MDN — Regular expressions and ReDoS",
+    "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions",
+    "topics": ["security", "clean-code"]
+  }
+]
