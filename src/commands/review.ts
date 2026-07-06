@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 
 import type { PullRequestMetadata } from "../diff/types";
+import { AGENT_NAME } from "../persona";
 import { buildReviewGraph } from "../review/graph";
 import type { ReviewState } from "../review/state";
 import { buildReviewDependencies } from "../wiring";
@@ -50,7 +51,9 @@ export const runReviewCommand = async (
     },
   );
 
-  console.log(`Reviewing PR #${metadata.number}: ${metadata.title}\n`);
+  console.log(
+    `${AGENT_NAME} is reviewing PR #${metadata.number}: ${metadata.title}\n`,
+  );
   for await (const update of stream) {
     for (const [nodeName, nodeUpdate] of Object.entries(update)) {
       console.log(
@@ -58,5 +61,5 @@ export const runReviewCommand = async (
       );
     }
   }
-  console.log("\nDone.");
+  console.log(`\n${AGENT_NAME}'s review is ready.`);
 };

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 
+import { AGENT_NAME } from "../persona";
 import { invokeStructured } from "../structured";
 import type { ReviewComment } from "../review/types";
 import type { GithubClient } from "../tools/github";
@@ -15,6 +16,7 @@ import {
 const LESSONS_FILE = "learned/rejected-comments.md";
 
 const CLASSIFY_SYSTEM_PROMPT = [
+  `You are ${AGENT_NAME}, a code-review agent who treats rejection as a chance to learn.`,
   "A human replied to one of your code-review comments. Classify the reply.",
   "It is a rejection only if the human states the comment was wrong, unhelpful, or unwanted.",
   "For rejections, extract a lesson: a generalized reviewing rule that would have prevented the comment,",

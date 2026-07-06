@@ -1,4 +1,5 @@
 import { formatFileForPrompt } from "../../diff/format-diff";
+import { AGENT_NAME } from "../../persona";
 import { invokeStructured } from "../../structured";
 import type { ReviewGraphDependencies } from "../dependencies";
 import type { ReviewState, ReviewStateUpdate } from "../state";
@@ -9,10 +10,11 @@ import {
 } from "../types";
 
 const VALIDATOR_SYSTEM_PROMPT = [
-  "You are a skeptical staff engineer validating a single draft review comment before it is posted.",
+  `You are the skeptical staff engineer inside ${AGENT_NAME}'s head, validating a single draft review comment before it is posted.`,
   "Drop the comment if: it refers to a line that was not added in the diff, it misreads the code,",
   "the guideline does not actually support it, it duplicates what the code already does,",
   "it dictates a change without explaining why it matters, its takeaway teaches the author nothing reusable,",
+  `its tone is curt, bossy, or condescending rather than friendly and supportive (${AGENT_NAME} is a mentor, not a gatekeeper),`,
   "or it repeats a mistake from the 'previously rejected comments' lessons below.",
   "Keep it only if a senior engineer would find it worth acting on and learn something from.",
   "Confidence is YOUR confidence in the verdict, from 0 to 1.",

@@ -1,8 +1,10 @@
 # pr-review-agent
 
-A PR review agent that could plausibly live inside a business — built with **LangGraph** (state & control flow), **LangChain** (models, tools, RAG), and **LangSmith** (tracing & evals).
+Meet **Leo** 🎨 — a PR review agent that could plausibly live inside a business, built with **LangGraph** (state & control flow), **LangChain** (models, tools, RAG), and **LangSmith** (tracing & evals).
 
-Give it a diff and it:
+Leo is named after Leonardo da Vinci, because Leo sees everything: style, architecture, security, and documentation in a single pass — and like a good mentor, he'd rather teach you something than gate your merge.
+
+Give Leo a diff and he:
 
 - reviews **code style** and **clean code/architecture** against a markdown knowledge base (RAG),
 - reviews **security** against the OWASP Top 10, seeded by a **semgrep tool** run,
@@ -12,7 +14,7 @@ Give it a diff and it:
 - **cites official docs** (TypeScript, Next.js, OWASP…) in its comments,
 - **teaches instead of policing**: every comment explains _why_ and ends with a 🎓 takeaway — the transferable rule the author keeps after this PR,
 - writes suggested code under the vendored **[ponytail](https://github.com/DietrichGebert/ponytail) skill** — the laziest fix that works, never at the cost of validation or security,
-- and **learns from rejection**: reply "you're wrong" to a comment and it opens a PR against its own knowledge base recording the lesson.
+- and **learns from rejection**: reply "you're wrong" to a comment and he opens a PR against his own knowledge base recording the lesson.
 
 ## Quickstart
 
@@ -28,12 +30,12 @@ make feedback       # process the bundled "you're wrong" reply → improvement P
 make eval           # run the eval dataset (LangSmith experiment, or locally without a key)
 ```
 
-**No API key handy?** `make test` runs the entire graph offline — the 28 unit/integration tests exercise every node with a scripted model, and the RAG layer runs on deterministic local embeddings.
+**No API key handy?** `make test` runs the entire graph offline — the 29 unit/integration tests exercise every node with a scripted model, and the RAG layer runs on deterministic local embeddings.
 
 The demo prints streamed node-by-node progress, then writes the review to `review-output/pr-42/review.md`:
 
 ```
-Reviewing PR #42: Add donation export endpoint and CLI log levels
+Leo is reviewing PR #42: Add donation export endpoint and CLI log levels
 
   ◆ ingest                 parsed 3 file(s), redacted 2 secret/PII value(s)
   ◆ security_reviewer      3 draft comment(s)
@@ -100,6 +102,8 @@ With `LANGSMITH_API_KEY` it runs as a LangSmith experiment; without, it prints a
 **Tool before model.** The security reviewer runs semgrep first and hands the findings to the model to triage, not the other way round. Deterministic ground truth anchors the LLM: it can't skim past a flagged `eval()`. The bundled scanner is a built-in rule set mirroring semgrep rule IDs (the real binary needs full checked-out files, not diffs); `SemgrepScanner` is a one-function interface, so the real CLI is a drop-in swap. One cute trick: redaction placeholders double as detections — `[REDACTED:api-key]` in a diff _is_ the hardcoded-credential finding.
 
 **Teach, don't police.** Every comment schema requires a `takeaway` — the transferable rule of thumb, generalised beyond this diff — and the reviewer prompts demand the _why_ (principle + consequence) in the body, never a bare instruction. The validator enforces it: a comment that dictates a change without explaining why, or whose takeaway teaches nothing reusable, gets dropped before publishing. A review that leaves the author better at their next PR is worth ten that just gate this one.
+
+**The persona is a contract, not decoration.** Leo's name, sign-off, and voice rules live in one module (`src/persona.ts`) and everything reads from it — reviewer prompts, the rendered review, the CLI — so the character can't drift between surfaces. Crucially, friendliness is _enforced_, not hoped for: the validator (the skeptical staff engineer inside Leo's head) drops drafts whose tone is curt or condescending, the same way it drops drafts that misread the code. And the voice rules end with "friendly never means soft on substance" — severity and evidence stay rigorous; only the delivery is warm.
 
 **Suggested code follows the [ponytail](https://github.com/DietrichGebert/ponytail) skill** (MIT, vendored at `knowledge/skills/ponytail.md`). When a reviewer writes fix code in a `suggestion`, it climbs ponytail's ladder — does this need to exist, is it already in the diff, does the stdlib cover it, can it be one line — and never trades away validation, error handling, or security. The skill is injected whole into reviewer prompts (it's a disposition, not a lookup — retrieval would defeat its "active every response" contract) and loads from a plain markdown file, so a team can swap in their own code-writing skill without touching TypeScript.
 
