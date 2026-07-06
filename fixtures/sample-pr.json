@@ -1,0 +1,7 @@
+{
+  "number": 42,
+  "title": "Add donation export endpoint and CLI log levels",
+  "description": "Adds a GET /api/export endpoint so the ops team can pull donation data per customer, plus replaces the CLI --verbose flag with --log-level.",
+  "author": "sam-dev",
+  "repository": "acme/listaid"
+}
