@@ -50,6 +50,9 @@ const judgeComment = async (
       ? formatFileForPrompt(file)
       : "(file not found in this diff — that alone is grounds to drop)",
     "",
+    "Validation skill (governs how you judge this draft):",
+    deps.knowledgeBase.reviewValidationSkill() || "(none installed)",
+    "",
     "Previously rejected comments (do not approve anything repeating these mistakes):",
     deps.knowledgeBase.learnedLessons() || "(none recorded yet)",
   ].join("\n");

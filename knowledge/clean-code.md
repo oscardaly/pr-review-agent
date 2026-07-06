@@ -26,6 +26,14 @@ Delete unused functions, unreachable branches, and commented-out blocks — git 
 
 Test code deserves the same care as production code. One concept per test, Arrange-Act-Assert with blank lines between phases, and boundary conditions covered (empty arrays, off-by-one, maximum values). A test should still pass if the implementation were rewritten — test the interface, not the internals.
 
+## Tests follow F.I.R.S.T.
+
+Fast — slow tests don't get run, and code rots. Independent — no test depends on another's state; each sets up its own context and runs in any order. Repeatable — same result locally, in CI, and offline; no external service calls in unit tests. Self-validating — pass or fail, never "inspect the logs to decide". Timely — written alongside the code; code written without tests in mind is hard to test.
+
+## Build a domain-specific testing language
+
+Extract helpers and factories until tests read like English: `createMockSession()`, `buildPricingConfig()` — not twenty lines of duplicated setup. Bugs cluster: when a test exposes a bug in a function, test that function exhaustively; it likely hides more.
+
 ## Obscured intent
 
 No dense one-liners. Break complex expressions into explanatory variables with meaningful names. If a reviewer has to simulate the expression in their head, it needs an intermediate variable.

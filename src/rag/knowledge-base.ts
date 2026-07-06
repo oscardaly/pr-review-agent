@@ -28,6 +28,7 @@ export type KnowledgeBase = {
   documentationLinksFor: (topic: string) => DocumentationLink[];
   learnedLessons: () => string;
   codeWritingSkill: () => string;
+  reviewValidationSkill: () => string;
 };
 
 const TOPIC_BY_FILENAME: Record<string, GuidelineTopic> = {
@@ -75,13 +76,12 @@ const loadLearnedLessons = async (knowledgePath: string): Promise<string> => {
   }
 };
 
-// Vendored from https://github.com/DietrichGebert/ponytail (MIT) — governs suggestion code.
-const loadCodeWritingSkill = async (knowledgePath: string): Promise<string> => {
+const loadSkill = async (
+  knowledgePath: string,
+  filename: string,
+): Promise<string> => {
   try {
-    return await readFile(
-      join(knowledgePath, "skills", "ponytail.md"),
-      "utf-8",
-    );
+    return await readFile(join(knowledgePath, "skills", filename), "utf-8");
   } catch {
     return "";
   }
@@ -91,12 +91,14 @@ export const loadKnowledgeBase = async (
   knowledgePath: string,
   embeddings: Embeddings,
 ): Promise<KnowledgeBase> => {
-  const [chunks, documentationLinks, lessons, codeWritingSkill] =
+  const [chunks, documentationLinks, lessons, codeWritingSkill, reviewCritic] =
     await Promise.all([
       loadGuidelineChunks(knowledgePath),
       loadDocumentationLinks(knowledgePath),
       loadLearnedLessons(knowledgePath),
-      loadCodeWritingSkill(knowledgePath),
+      // Vendored from https://github.com/DietrichGebert/ponytail (MIT) — governs suggestion code.
+      loadSkill(knowledgePath, "ponytail.md"),
+      loadSkill(knowledgePath, "review-critic.md"),
     ]);
   const vectorStore = await MemoryVectorStore.fromDocuments(chunks, embeddings);
 
@@ -109,5 +111,6 @@ export const loadKnowledgeBase = async (
       documentationLinks.filter((link) => link.topics.includes(topic)),
     learnedLessons: () => lessons,
     codeWritingSkill: () => codeWritingSkill,
+    reviewValidationSkill: () => reviewCritic,
   };
 };

@@ -74,4 +74,17 @@ describe("loadKnowledgeBase", () => {
     expect(codeWritingSkill).toContain("## The ladder");
     expect(codeWritingSkill).toContain("## When NOT to be lazy");
   });
+
+  test("serves the review-critic validation skill", async () => {
+    const knowledgeBase = await loadKnowledgeBase(
+      knowledgePath,
+      new HashEmbeddings(),
+    );
+
+    const reviewValidationSkill = knowledgeBase.reviewValidationSkill();
+
+    expect(reviewValidationSkill).toContain("# Review Critic");
+    expect(reviewValidationSkill).toContain("## False-positive taxonomy");
+    expect(reviewValidationSkill).toContain("## The quality bar");
+  });
 });
