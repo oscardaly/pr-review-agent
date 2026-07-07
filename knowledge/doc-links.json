@@ -30,6 +30,11 @@
     "topics": ["security"]
   },
   {
+    "title": "OWASP Top 10 for LLM Applications",
+    "url": "https://genai.owasp.org/llm-top-10/",
+    "topics": ["security"]
+  },
+  {
     "title": "OWASP Cheat Sheet — SQL Injection Prevention",
     "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
     "topics": ["security"]

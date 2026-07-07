@@ -36,6 +36,7 @@ const TOPIC_BY_FILENAME: Record<string, GuidelineTopic> = {
   "clean-code.md": "clean-code",
   "clean-architecture.md": "architecture",
   "owasp-top-10.md": "security",
+  "owasp-llm-top-10.md": "security",
 };
 
 const DEFAULT_RETRIEVAL_COUNT = 4;

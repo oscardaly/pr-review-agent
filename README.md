@@ -7,7 +7,7 @@ Leo is named after Leonardo da Vinci, because Leo sees everything: style, archit
 Give Leo a diff and he:
 
 - reviews **code style** and **clean code/architecture** against a markdown knowledge base (RAG),
-- reviews **security** against the OWASP Top 10, seeded by a **semgrep tool** run,
+- reviews **security** against the OWASP Top 10 — and, for diffs that build on LLMs, the **OWASP Top 10 for LLM Applications** (prompt injection, excessive agency, improper output handling…) — seeded by a **semgrep tool** run,
 - **redacts secrets/PII** before any model or trace sees the code,
 - sends every draft comment through a **validator subagent** before publishing,
 - checks whether **user documentation** went stale,
@@ -30,7 +30,7 @@ make feedback       # process the bundled "you're wrong" reply → improvement P
 make eval           # run the eval dataset (LangSmith experiment, or locally without a key)
 ```
 
-**No API key handy?** `make test` runs the entire graph offline — the 30 unit/integration tests exercise every node with a scripted model, and the RAG layer runs on deterministic local embeddings.
+**No API key handy?** `make test` runs the entire graph offline — the 31 unit/integration tests exercise every node with a scripted model, and the RAG layer runs on deterministic local embeddings.
 
 The demo prints streamed node-by-node progress, then writes the review to `review-output/pr-42/review.md`:
 

@@ -49,6 +49,24 @@ describe("loadKnowledgeBase", () => {
     ).toBe(true);
   });
 
+  test("retrieves LLM security guidance for an AI-flavoured query", async () => {
+    const knowledgeBase = await loadKnowledgeBase(
+      knowledgePath,
+      new HashEmbeddings(),
+    );
+
+    const guidelines = await knowledgeBase.retrieveGuidelines(
+      ["security"],
+      "prompt injection untrusted tool output inserted into agent prompt",
+    );
+
+    expect(
+      guidelines.some(
+        (guideline) => guideline.metadata.source === "owasp-llm-top-10.md",
+      ),
+    ).toBe(true);
+  });
+
   test("serves documentation links by topic and the learned lessons file", async () => {
     const knowledgeBase = await loadKnowledgeBase(
       knowledgePath,
