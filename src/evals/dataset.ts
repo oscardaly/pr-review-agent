@@ -1,5 +1,6 @@
 import type { PullRequestMetadata } from "../diff/types";
 import type { EvalExpectation } from "./evaluators";
+import { loadRegressionCases } from "./regression-cases";
 
 export type EvalExample = {
   name: string;
@@ -147,3 +148,23 @@ export const EVAL_DATASET: EvalExample[] = [
     expected: { mustFlag: [], docsImpactExpected: true },
   },
 ];
+
+/**
+ * The full dataset: the curated examples above plus every regression case the
+ * feedback graph has recorded — each rejected comment permanently re-checked
+ * against the diff that earned the lesson.
+ */
+export const loadEvalDataset = async (
+  knowledgePath: string,
+): Promise<EvalExample[]> => {
+  const regressionCases = await loadRegressionCases(knowledgePath);
+  return [
+    ...EVAL_DATASET,
+    ...regressionCases.map((regression) => ({
+      name: `regression-${regression.name}`,
+      metadata: regression.metadata,
+      diff: regression.diff,
+      expected: { mustFlag: [], mustNotFlag: regression.mustNotFlag },
+    })),
+  ];
+};

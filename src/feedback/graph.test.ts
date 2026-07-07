@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -34,6 +34,7 @@ describe("feedback graph", () => {
         title: "perf-sensitive-loops",
         lesson:
           "Do not suggest declarative array transforms inside documented hot paths.",
+        regressionKeywords: ["functions", "map", "join", "loop"],
       },
       outputPath,
     );
@@ -43,25 +44,71 @@ describe("feedback graph", () => {
     expect(finalState.classification?.type).toBe("rejection");
     expect(finalState.improvementPrUrl).toBeDefined();
 
+    const branchPath = join(
+      outputPath,
+      "improvement-prs",
+      "agent/lesson-perf-sensitive-loops",
+    );
     const proposedLessons = readFileSync(
-      join(
-        outputPath,
-        "improvement-prs",
-        "agent/lesson-perf-sensitive-loops",
-        "knowledge__learned__rejected-comments.md",
-      ),
+      join(branchPath, "knowledge__learned__rejected-comments.md"),
       "utf-8",
     );
     expect(proposedLessons).toContain("## Lesson: perf-sensitive-loops");
     expect(proposedLessons).toContain(
       "## Lesson: single-letter names are fine",
     ); // existing lessons preserved
+
+    const proposedRegressions = JSON.parse(
+      readFileSync(
+        join(branchPath, "knowledge__learned__regression-cases.json"),
+        "utf-8",
+      ),
+    );
+    expect(proposedRegressions).toEqual([
+      {
+        name: "perf-sensitive-loops",
+        metadata: FEEDBACK_INPUT.pr!.metadata,
+        diff: FEEDBACK_INPUT.pr!.diff,
+        mustNotFlag: [["functions", "map", "join", "loop"]],
+      },
+    ]);
+  });
+
+  test("a rejection without the original PR context records the lesson only", async () => {
+    const outputPath = mkdtempSync(join(tmpdir(), "pr-feedback-nodiff-"));
+    const graph = buildTestGraph(
+      {
+        type: "rejection",
+        title: "lesson-without-diff",
+        lesson: "A rule of thumb.",
+        regressionKeywords: ["functions"],
+      },
+      outputPath,
+    );
+
+    const finalState = await graph.invoke({
+      comment: FEEDBACK_INPUT.comment,
+      humanReply: FEEDBACK_INPUT.humanReply,
+    });
+
+    expect(finalState.improvementPrUrl).toBeDefined();
+    expect(finalState.updatedRegressionFile).toBeUndefined();
+    expect(
+      existsSync(
+        join(
+          outputPath,
+          "improvement-prs",
+          "agent/lesson-lesson-without-diff",
+          "knowledge__learned__regression-cases.json",
+        ),
+      ),
+    ).toBe(false);
   });
 
   test("an agreement ends the graph without opening a PR", async () => {
     const outputPath = mkdtempSync(join(tmpdir(), "pr-feedback-agree-"));
     const graph = buildTestGraph(
-      { type: "agreement", title: "ack", lesson: "" },
+      { type: "agreement", title: "ack", lesson: "", regressionKeywords: [] },
       outputPath,
     );
 

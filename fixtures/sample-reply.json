@@ -11,5 +11,15 @@
     "citations": [],
     "guideline": "Small functions, small files"
   },
-  "humanReply": "You're wrong here — this loop is in a hot path that formats exports with up to 500k rows, and we deliberately avoid building intermediate arrays. Perf-sensitive loops are exempt from the declarative-transforms preference."
+  "humanReply": "You're wrong here — this loop is in a hot path that formats exports with up to 500k rows, and we deliberately avoid building intermediate arrays. Perf-sensitive loops are exempt from the declarative-transforms preference.",
+  "pr": {
+    "metadata": {
+      "number": 42,
+      "title": "Add donation export endpoint and CLI log levels",
+      "description": "Adds a GET /api/export endpoint so the ops team can pull donation data per customer, plus replaces the CLI --verbose flag with --log-level.",
+      "author": "sam-dev",
+      "repository": "acme/listaid"
+    },
+    "diff": "diff --git a/src/lib/exportHelpers.ts b/src/lib/exportHelpers.ts\nnew file mode 100644\n--- /dev/null\n+++ b/src/lib/exportHelpers.ts\n@@ -0,0 +1,10 @@\n+export const fmt = (d: unknown[], t: string) => {\n+  let s = \"\";\n+  for (let i = 0; i < d.length; i++) {\n+    if (i > 500) break;\n+    s += JSON.stringify(d[i]) + (t === \"csv\" ? \",\" : \"\\n\");\n+  }\n+  return s;\n+};\n"
+  }
 }

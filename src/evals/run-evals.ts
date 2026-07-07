@@ -1,4 +1,5 @@
-import { EVAL_DATASET } from "./dataset";
+import { loadConfig } from "../config";
+import { loadEvalDataset } from "./dataset";
 import { scoreExample, type EvalScore } from "./evaluators";
 import { buildEvalGraph, runExampleThroughGraph } from "./run-graph";
 import { runOnLangSmith } from "./langsmith-runner";
@@ -8,10 +9,11 @@ const formatScores = (scores: EvalScore[]): string =>
 
 const runLocally = async (): Promise<void> => {
   console.log("LANGSMITH_API_KEY not set — running evals locally.\n");
+  const dataset = await loadEvalDataset(loadConfig().knowledgePath);
   const graph = await buildEvalGraph();
   const allScores: EvalScore[] = [];
 
-  for (const example of EVAL_DATASET) {
+  for (const example of dataset) {
     const outputs = await runExampleThroughGraph(
       graph,
       { diff: example.diff, metadata: example.metadata },
@@ -25,7 +27,7 @@ const runLocally = async (): Promise<void> => {
   const meanScore =
     allScores.reduce((sum, score) => sum + score.score, 0) / allScores.length;
   console.log(
-    `\nMean score across ${EVAL_DATASET.length} examples: ${meanScore.toFixed(2)}`,
+    `\nMean score across ${dataset.length} examples: ${meanScore.toFixed(2)}`,
   );
 };
 

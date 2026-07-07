@@ -8,13 +8,14 @@ Give Leo a diff and he:
 
 - reviews **code style** and **clean code/architecture** against a markdown knowledge base (RAG),
 - reviews **security** against the OWASP Top 10 — and, for diffs that build on LLMs, the **OWASP Top 10 for LLM Applications** (prompt injection, excessive agency, improper output handling…) — seeded by a **semgrep tool** run,
+- flags **untested changes** via a deterministic test-mapping tool, then judges which gaps actually matter,
 - **redacts secrets/PII** before any model or trace sees the code,
 - sends every draft comment through a **validator subagent** before publishing,
 - checks whether **user documentation** went stale,
 - **cites official docs** (TypeScript, Next.js, OWASP…) in its comments,
 - **teaches instead of policing**: every comment explains _why_ and ends with a 🎓 takeaway — the transferable rule the author keeps after this PR,
 - writes suggested code under the vendored **[ponytail](https://github.com/DietrichGebert/ponytail) skill** — the laziest fix that works, never at the cost of validation or security,
-- and **learns from rejection**: reply "you're wrong" to a comment and he opens a PR against his own knowledge base recording the lesson.
+- and **learns from rejection**: reply "you're wrong" to a comment and he opens a PR against his own knowledge base recording the lesson — and freezing the diff as an **eval regression case** so the mistake can never quietly return.
 
 ## Quickstart
 
@@ -30,7 +31,7 @@ make feedback       # process the bundled "you're wrong" reply → improvement P
 make eval           # run the eval dataset (LangSmith experiment, or locally without a key)
 ```
 
-**No API key handy?** `make test` runs the entire graph offline — the 32 unit/integration tests exercise every node with a scripted model, and the RAG layer runs on deterministic local embeddings.
+**No API key handy?** `make test` runs the entire graph offline — the 39 unit/integration tests exercise every node with a scripted model, and the RAG layer runs on deterministic local embeddings.
 
 The demo prints streamed node-by-node progress, then writes the review to `review-output/pr-42/review.md`:
 
@@ -41,8 +42,9 @@ Leo is reviewing PR #42: Add donation export endpoint and CLI log levels
   ◆ security_reviewer      3 draft comment(s)
   ◆ style_reviewer         2 draft comment(s)
   ◆ architecture_reviewer  2 draft comment(s)
+  ◆ tests_reviewer         1 draft comment(s)
   ◆ docs_reviewer          2 document(s) need updating
-  ◆ validate_comments      kept 5, dropped 2
+  ◆ validate_comments      kept 5, dropped 3
   ◆ publish_review         review written to .../review-output/pr-42/review.md
 ```
 
@@ -58,28 +60,32 @@ flowchart TD
     ingest -- "reviewable changes" --> styl["style_reviewer\nRAG: code-style + clean-code"]
     ingest -- "reviewable changes" --> arch["architecture_reviewer\nRAG: clean-architecture"]
     ingest -- "reviewable changes" --> sec["security_reviewer\nsemgrep tool → RAG: OWASP Top 10"]
+    ingest -- "reviewable changes" --> tst["tests_reviewer\ntest-mapping tool → clean-code testing rules"]
     ingest -- "reviewable changes" --> docs["docs_reviewer\nreads user docs from env path"]
     ingest -- "empty / delete-only diff" --> publish
     styl --> validate["validate_comments\nsubagent cross-examines every draft\n(+ learned lessons from past rejections)"]
     arch --> validate
     sec --> validate
+    tst --> validate
     docs --> validate
     validate --> publish["publish_review\nrender markdown · post via GitHub client"]
     publish --> END(("end"))
 ```
 
-**How state moves.** `ingest` parses the raw diff into typed files/hunks with line numbers, redacts secrets and PII in place, then _clears the raw diff from state_ — every later node (and every LangSmith trace of it) works on the redacted view. A conditional edge skips straight to `publish_review` if there's nothing reviewable. The four reviewers run **in parallel** in one superstep, each appending to `draftComments` via a concat reducer — that's the only shared-state merge in the graph, so there's nothing to race. `validate_comments` joins the fan-in (array edge = wait for all), deduplicates, and judges each draft independently; only comments that survive with confidence ≥ threshold reach `publish_review`.
+**How state moves.** `ingest` parses the raw diff into typed files/hunks with line numbers, redacts secrets and PII in place, then _clears the raw diff from state_ — every later node (and every LangSmith trace of it) works on the redacted view. A conditional edge skips straight to `publish_review` if there's nothing reviewable. The five reviewers run **in parallel** in one superstep, each appending to `draftComments` via a concat reducer — that's the only shared-state merge in the graph, so there's nothing to race. `validate_comments` joins the fan-in (array edge = wait for all), deduplicates, and judges each draft independently; only comments that survive with confidence ≥ threshold reach `publish_review`.
 
 The **feedback graph** is a second, smaller graph:
 
 ```mermaid
 flowchart LR
     START((start)) --> classify["classify_reply"]
-    classify -- rejection --> lesson["record_lesson"] --> pr["open_improvement_pr"] --> END(("end"))
+    classify -- rejection --> lesson["record_lesson"]
+    lesson -- "original diff provided" --> regress["record_regression_case"] --> pr["open_improvement_pr"] --> END(("end"))
+    lesson -- "no diff context" --> pr
     classify -- "agreement / question" --> END
 ```
 
-A rejection gets generalized into a rule of thumb ("don't suggest declarative transforms in documented hot paths"), appended to `knowledge/learned/rejected-comments.md`, and proposed as a PR. The validator reads that file on every review — so a merged lesson immediately changes what the agent will approve. Learning is **PR-gated on purpose**: the agent proposes, humans merge. An agent that silently rewrites its own rules from one grumpy reply is a liability.
+A rejection gets generalized into a rule of thumb ("don't suggest declarative transforms in documented hot paths"), appended to `knowledge/learned/rejected-comments.md`, and proposed as a PR. The validator reads that file on every review — so a merged lesson immediately changes what the agent will approve. And when the original diff is provided, the rejection is also **frozen as an eval regression case** (`knowledge/learned/regression-cases.json`): `make eval` re-reviews that exact diff forever and fails if the rejected comment reappears. Every mistake Leo makes becomes a permanent regression test. Learning is **PR-gated on purpose** — both files ship in the same proposed PR: the agent proposes, humans merge. An agent that silently rewrites its own rules from one grumpy reply is a liability.
 
 ## LangSmith
 
@@ -87,19 +93,20 @@ Set `LANGSMITH_TRACING=true` + `LANGSMITH_API_KEY` and every run is traced end-t
 
 ## Evals
 
-`src/evals/dataset.ts` has six diffs with expected outcomes — SQL injection, hardcoded API key, cryptic naming, `eval()` on user input, a stale-docs flag rename, and (importantly) a **clean refactor where the right answer is to stay quiet**. Three programmatic evaluators score each run:
+`src/evals/dataset.ts` has six curated diffs with expected outcomes — SQL injection, hardcoded API key, cryptic naming, `eval()` on user input, a stale-docs flag rename, and (importantly) a **clean refactor where the right answer is to stay quiet**. The dataset also **grows itself**: every rejection processed by the feedback graph adds a regression case, so the suite gets stricter the longer Leo is used. Four programmatic evaluators score each run:
 
 - `finding_recall` — did the required findings appear (matched by category/title keywords)?
 - `clean_pass` — did it avoid raising warnings on the clean diff? (A reviewer that cries wolf gets muted by the team within a week.)
 - `docs_impact` — was the documentation-staleness call correct?
+- `regression_pass` — did any previously rejected comment reappear on the diff that earned the lesson?
 
 With `LANGSMITH_API_KEY` it runs as a LangSmith experiment; without, it prints a local score table. The scoring functions are pure and unit-tested offline.
 
 ## Design notes
 
-**Why these five nodes and not one big prompt?** Splitting reviewers by concern gives each one a small, focused context (its own retrieved guidelines, its own doc links), lets them run in parallel, and makes the trace legible — you can see _which_ reviewer produced a bad comment and eval them separately. The validator exists because reviewer nodes are rewarded for finding things; a separate skeptic with the opposite disposition ("drop it unless a senior engineer would act on it") is the cheapest precision lever, and it's also where learned lessons get enforced.
+**Why these six nodes and not one big prompt?** Splitting reviewers by concern gives each one a small, focused context (its own retrieved guidelines, its own doc links), lets them run in parallel, and makes the trace legible — you can see _which_ reviewer produced a bad comment and eval them separately. The validator exists because reviewer nodes are rewarded for finding things; a separate skeptic with the opposite disposition ("drop it unless a senior engineer would act on it") is the cheapest precision lever, and it's also where learned lessons get enforced.
 
-**Tool before model.** The security reviewer runs semgrep first and hands the findings to the model to triage, not the other way round. Deterministic ground truth anchors the LLM: it can't skim past a flagged `eval()`. The bundled scanner is a built-in rule set mirroring semgrep rule IDs (the real binary needs full checked-out files, not diffs); `SemgrepScanner` is a one-function interface, so the real CLI is a drop-in swap. One cute trick: redaction placeholders double as detections — `[REDACTED:api-key]` in a diff _is_ the hardcoded-credential finding.
+**Tool before model.** The security reviewer runs semgrep first and hands the findings to the model to triage, not the other way round. Deterministic ground truth anchors the LLM: it can't skim past a flagged `eval()`. The tests reviewer works the same way: a deterministic test-mapping tool reports which changed source files had no test touched in the same PR, and the model judges which of those gaps a senior engineer would actually flag — new branching logic yes, type-only tweaks no. The bundled scanner is a built-in rule set mirroring semgrep rule IDs (the real binary needs full checked-out files, not diffs); `SemgrepScanner` is a one-function interface, so the real CLI is a drop-in swap. One cute trick: redaction placeholders double as detections — `[REDACTED:api-key]` in a diff _is_ the hardcoded-credential finding.
 
 **Teach, don't police.** Every comment schema requires a `takeaway` — the transferable rule of thumb, generalised beyond this diff — and the reviewer prompts demand the _why_ (principle + consequence) in the body, never a bare instruction. The validator enforces it: a comment that dictates a change without explaining why, or whose takeaway teaches nothing reusable, gets dropped before publishing. A review that leaves the author better at their next PR is worth ten that just gate this one.
 

@@ -4,6 +4,7 @@ import {
   scoreCleanliness,
   scoreDocsImpact,
   scoreFindingRecall,
+  scoreRegression,
 } from "./evaluators";
 
 const outputsWith = (
@@ -57,6 +58,30 @@ describe("scoreCleanliness", () => {
     );
 
     expect(score.score).toBe(1);
+  });
+});
+
+describe("scoreRegression", () => {
+  test("fails when a previously rejected comment reappears", () => {
+    const score = scoreRegression(
+      { mustFlag: [], mustNotFlag: [["functions", "map", "join"]] },
+      outputsWith(["functions Use .map()/.join() instead of a loop"]),
+    );
+
+    expect(score.score).toBe(0);
+  });
+
+  test("passes when the rejected comment stays gone", () => {
+    const score = scoreRegression(
+      { mustFlag: [], mustNotFlag: [["functions", "map", "join"]] },
+      outputsWith(["injection SQL built from user input"]),
+    );
+
+    expect(score.score).toBe(1);
+  });
+
+  test("is vacuously perfect without regression guards", () => {
+    expect(scoreRegression({ mustFlag: [] }, outputsWith(["x"])).score).toBe(1);
   });
 });
 

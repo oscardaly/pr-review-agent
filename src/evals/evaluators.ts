@@ -1,6 +1,8 @@
 export type EvalExpectation = {
   /** Each inner array lists acceptable category/title keywords for one required finding. */
   mustFlag: string[][];
+  /** Each inner array lists keywords of a previously rejected comment that must NOT reappear. */
+  mustNotFlag?: string[][];
   /** True when the diff is fine and the agent should keep quiet (no warning/critical comments). */
   expectClean?: boolean;
   /** True when the diff should trigger a documentation-update flag. */
@@ -60,6 +62,27 @@ export const scoreCleanliness = (
   };
 };
 
+/** Regression guard: a rejected comment must stay rejected on the diff that earned the lesson. */
+export const scoreRegression = (
+  expected: EvalExpectation,
+  outputs: EvalOutputs,
+): EvalScore => {
+  if (!expected.mustNotFlag?.length) {
+    return { key: "regression_pass", score: 1, comment: "no rejected-comment guards" };
+  }
+  const repeated = expected.mustNotFlag.filter((keywords) =>
+    matchesAnyKeyword(outputs.findings, keywords),
+  );
+  return {
+    key: "regression_pass",
+    score: repeated.length === 0 ? 1 : 0,
+    comment:
+      repeated.length === 0
+        ? "no rejected comment repeated"
+        : `repeated ${repeated.length} previously rejected comment(s)`,
+  };
+};
+
 export const scoreDocsImpact = (
   expected: EvalExpectation,
   outputs: EvalOutputs,
@@ -88,4 +111,5 @@ export const scoreExample = (
   scoreFindingRecall(expected, outputs),
   scoreCleanliness(expected, outputs),
   scoreDocsImpact(expected, outputs),
+  scoreRegression(expected, outputs),
 ];

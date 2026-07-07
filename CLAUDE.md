@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Leo — a PR review agent built with LangGraph (state & control flow), LangChain (models, tools, RAG), and LangSmith (tracing & evals). It parses a diff, redacts secrets/PII, fans out to four parallel reviewers (style, architecture, security, docs), cross-examines every draft comment with a validator subagent, and publishes a teaching-oriented review. A second graph learns from rejected comments by proposing PRs against its own knowledge base.
+Leo — a PR review agent built with LangGraph (state & control flow), LangChain (models, tools, RAG), and LangSmith (tracing & evals). It parses a diff, redacts secrets/PII, fans out to five parallel reviewers (style, architecture, security, tests, docs), cross-examines every draft comment with a validator subagent, and publishes a teaching-oriented review. A second graph learns from rejected comments by proposing PRs against its own knowledge base — including freezing the original diff as an eval regression case.
 
 ## Commands
 
@@ -22,13 +22,14 @@ bun src/cli.ts bootstrap --repo <path>   # Draft guideline docs from a target re
 ## Architecture
 
 - `src/review/` — the review graph: `state.ts` (annotations + reducers), `graph.ts` (edges), `nodes/` (ingest → reviewers → validate → publish). Reviewers run in parallel in one superstep, appending to `draftComments` via a concat reducer — the only shared-state merge in the graph.
-- `src/feedback/` — the self-improvement graph (classify reply → record lesson → open improvement PR).
+- `src/feedback/` — the self-improvement graph (classify reply → record lesson → record regression case → open improvement PR).
+- `src/evals/` — curated dataset plus regression cases recorded by the feedback graph (`loadEvalDataset` merges both); programmatic evaluators; local and LangSmith runners.
 - `src/rag/` — knowledge base: markdown chunked on `##` headings (one chunk = one complete rule), topic-filtered cosine similarity, hashed bag-of-words embeddings as the offline fallback.
-- `src/tools/` — the semgrep scanner (LangChain `tool()`, so scans appear as traced tool runs) and the filesystem-backed, Octokit-shaped GitHub client stub.
+- `src/tools/` — the semgrep scanner and the test-mapping analyzer (both LangChain `tool()`, so they appear as traced tool runs; both deterministic-first — the model triages their output) and the filesystem-backed, Octokit-shaped GitHub client stub.
 - `src/diff/` — unified-diff parser, secret/PII redaction, prompt formatting.
 - `src/persona.ts` — Leo's name, sign-off, and voice rules, defined once. Prompts, rendered reviews, and the CLI all read from here; never inline persona text elsewhere.
 - `src/wiring.ts` — the only place real implementations are chosen. The graph takes `{ model, knowledgeBase, github, semgrepScanner, config }` at build time; everything is injected.
-- `knowledge/` — the guideline docs (RAG source), `skills/` (dispositions injected whole into prompts: ponytail for suggestion code, review-critic for validation, threat-modelling for the security reviewer), `learned/` (lessons from rejected comments).
+- `knowledge/` — the guideline docs (RAG source), `skills/` (dispositions injected whole into prompts: ponytail for suggestion code, review-critic for validation, threat-modelling for the security reviewer), `learned/` (lessons and eval regression cases from rejected comments).
 
 ### Load-bearing design rules
 

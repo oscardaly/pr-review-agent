@@ -9,6 +9,7 @@ import {
 } from "./nodes/guideline-reviewers";
 import { makeReviewPublisher } from "./nodes/publish-review";
 import { makeSecurityReviewer } from "./nodes/security-reviewer";
+import { makeTestsReviewer } from "./nodes/tests-reviewer";
 import { makeCommentValidator } from "./nodes/validate-comments";
 import { ReviewStateAnnotation, type ReviewState } from "./state";
 
@@ -16,6 +17,7 @@ const REVIEWERS = [
   "style_reviewer",
   "architecture_reviewer",
   "security_reviewer",
+  "tests_reviewer",
   "docs_reviewer",
 ] as const;
 
@@ -29,6 +31,7 @@ export const buildReviewGraph = (deps: ReviewGraphDependencies) =>
     .addNode("style_reviewer", makeStyleReviewer(deps))
     .addNode("architecture_reviewer", makeArchitectureReviewer(deps))
     .addNode("security_reviewer", makeSecurityReviewer(deps))
+    .addNode("tests_reviewer", makeTestsReviewer(deps))
     .addNode("docs_reviewer", makeDocsReviewer(deps))
     .addNode("validate_comments", makeCommentValidator(deps))
     .addNode("publish_review", makeReviewPublisher(deps))

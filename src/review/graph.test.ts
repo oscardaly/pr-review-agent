@@ -84,6 +84,24 @@ const REVIEWER_SCRIPT: ScriptRule[] = [
     },
   },
   {
+    match: "the tests reviewer",
+    response: {
+      comments: [
+        {
+          file: "src/lib/exportHelpers.ts",
+          line: 1,
+          severity: "warning",
+          category: "missing-tests",
+          title: "fmt's 500-row truncation has no test",
+          body: "The truncation branch is new logic with no test touched in this PR.",
+          takeaway: "New branching logic ships with a test for its boundary.",
+          citations: [],
+          guideline: "Tests are first-class code",
+        },
+      ],
+    },
+  },
+  {
     match: "user-facing documentation stale",
     response: {
       needsUpdate: true,
@@ -107,6 +125,10 @@ const REVIEWER_SCRIPT: ScriptRule[] = [
   {
     match: "Rename fmt and its parameters",
     response: { verdict: "drop", confidence: 0.9, reasoning: "nitpick" },
+  },
+  {
+    match: "fmt's 500-row truncation has no test",
+    response: { verdict: "drop", confidence: 0.8, reasoning: "fixture code" },
   },
 ];
 
@@ -135,11 +157,11 @@ describe("review graph", () => {
       metadata: SAMPLE_METADATA,
     });
 
-    expect(finalState.draftComments).toHaveLength(3);
+    expect(finalState.draftComments).toHaveLength(4);
     expect(
       finalState.validatedComments.map((comment) => comment.title),
     ).toEqual(["SQL injection via template literal"]);
-    expect(finalState.droppedComments).toHaveLength(2);
+    expect(finalState.droppedComments).toHaveLength(3);
     expect(finalState.docsImpact?.needsUpdate).toBe(true);
     expect(finalState.redactions).toHaveLength(2);
     expect(finalState.rawDiff).toBe("");
@@ -150,7 +172,7 @@ describe("review graph", () => {
     expect(reviewMarkdown).toContain(
       "Takeaway:** User input may only reach an interpreter through a parameterized API.",
     );
-    expect(reviewMarkdown).toContain("2 draft(s) dropped by the validator");
+    expect(reviewMarkdown).toContain("3 draft(s) dropped by the validator");
     expect(reviewMarkdown).toContain("2 secret/PII value(s) redacted");
     expect(reviewMarkdown).toContain("cli-usage.md");
     expect(existsSync(join(outputPath, "pr-42", "comments.json"))).toBe(true);

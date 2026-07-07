@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-export const ReviewerNameSchema = z.enum(["style", "architecture", "security"]);
+export const ReviewerNameSchema = z.enum([
+  "style",
+  "architecture",
+  "security",
+  "tests",
+]);
 export type ReviewerName = z.infer<typeof ReviewerNameSchema>;
 
 export const CitationSchema = z.object({
