@@ -1,10 +1,15 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import type { ValidatedComment } from "../review/types";
+
 export type PublishedReview = {
   prNumber: number;
+  /** The complete review, findings included — what a human reads as one document. */
   markdown: string;
-  comments: unknown[];
+  /** The review without the findings section — the body when comments are posted inline instead. */
+  summaryMarkdown: string;
+  comments: ValidatedComment[];
 };
 
 export type ImprovementPullRequest = {
