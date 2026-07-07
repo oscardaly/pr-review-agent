@@ -3,6 +3,8 @@ import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import type { BaseMessage } from "@langchain/core/messages";
+
 import { loadConfig } from "../config";
 import { HashEmbeddings } from "../rag/hash-embeddings";
 import { loadKnowledgeBase } from "../rag/knowledge-base";
@@ -176,6 +178,47 @@ describe("review graph", () => {
     expect(reviewMarkdown).toContain("2 secret/PII value(s) redacted");
     expect(reviewMarkdown).toContain("cli-usage.md");
     expect(existsSync(join(outputPath, "pr-42", "comments.json"))).toBe(true);
+  });
+
+  test("a reviewer that fails outright is skipped instead of failing the review", async () => {
+    const outputPath = mkdtempSync(join(tmpdir(), "pr-review-degraded-"));
+    class FailingStyleModel extends ScriptedChatModel {
+      override async _generate(messages: BaseMessage[]) {
+        const promptText = messages
+          .map((message) => String(message.content))
+          .join("\n");
+        if (promptText.includes("the code style reviewer")) {
+          throw Object.assign(new Error("provider rejected the key"), {
+            status: 401,
+          });
+        }
+        return super._generate(messages);
+      }
+    }
+    const config = { ...loadConfig(), outputPath };
+    const graph = buildReviewGraph({
+      model: new FailingStyleModel(
+        REVIEWER_SCRIPT.filter((rule) => rule.match !== "the code style reviewer"),
+      ),
+      knowledgeBase: await loadKnowledgeBase(
+        config.knowledgePath,
+        new HashEmbeddings(),
+      ),
+      github: createFileSystemGithubClient(outputPath),
+      semgrepScanner: scanWithBuiltinRules,
+      config,
+    });
+
+    const finalState = await graph.invoke({
+      rawDiff: SAMPLE_DIFF,
+      metadata: SAMPLE_METADATA,
+    });
+
+    expect(finalState.draftComments).toHaveLength(3); // style reviewer degraded to zero comments
+    expect(
+      finalState.validatedComments.map((comment) => comment.title),
+    ).toEqual(["SQL injection via template literal"]);
+    expect(finalState.reviewUrl).toBeDefined();
   });
 
   test("skips the reviewers entirely when the diff has nothing reviewable", async () => {
