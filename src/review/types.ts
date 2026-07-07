@@ -51,9 +51,10 @@ export const DraftFindingsSchema = z.object({
   comments: z.array(DraftCommentSchema),
 });
 
-export type ReviewComment = z.infer<typeof DraftCommentSchema> & {
-  reviewer: ReviewerName;
-};
+export const ReviewCommentSchema = DraftCommentSchema.extend({
+  reviewer: ReviewerNameSchema,
+});
+export type ReviewComment = z.infer<typeof ReviewCommentSchema>;
 
 export const ValidationVerdictSchema = z.object({
   verdict: z.enum(["keep", "drop"]),
@@ -61,9 +62,10 @@ export const ValidationVerdictSchema = z.object({
   reasoning: z.string(),
 });
 
-export type ValidatedComment = ReviewComment & {
-  validation: z.infer<typeof ValidationVerdictSchema>;
-};
+export const ValidatedCommentSchema = ReviewCommentSchema.extend({
+  validation: ValidationVerdictSchema,
+});
+export type ValidatedComment = z.infer<typeof ValidatedCommentSchema>;
 
 export const DocsImpactSchema = z.object({
   needsUpdate: z.boolean(),

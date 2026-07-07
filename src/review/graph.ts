@@ -13,7 +13,7 @@ import { makeSecurityReviewer } from "./nodes/security-reviewer";
 import { makeTestsReviewer } from "./nodes/tests-reviewer";
 import { makeCommentValidator } from "./nodes/validate-comments";
 import {
-  ReviewStateAnnotation,
+  ReviewStateSchema,
   type ReviewState,
   type ReviewStateUpdate,
 } from "./state";
@@ -56,7 +56,7 @@ const degradeOnFailure =
   };
 
 export const buildReviewGraph = (deps: ReviewGraphDependencies) =>
-  new StateGraph(ReviewStateAnnotation)
+  new StateGraph(ReviewStateSchema)
     // Applies to the non-reviewer nodes: reviewers catch their own failures below.
     .setNodeDefaults({ retryPolicy: { maxAttempts: 3 } })
     .addNode("ingest", ingestNode)

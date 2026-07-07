@@ -3,7 +3,8 @@ import { join } from "node:path";
 
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { RunnableConfig } from "@langchain/core/runnables";
-import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
+import { END, START, StateGraph, StateSchema } from "@langchain/langgraph";
+import { z } from "zod";
 
 import {
   loadRegressionCases,
@@ -36,17 +37,17 @@ export type FeedbackGraphDependencies = {
   knowledgePath: string;
 };
 
-const FeedbackStateAnnotation = Annotation.Root({
-  comment: Annotation<ReviewComment>,
-  humanReply: Annotation<string>,
-  pr: Annotation<FeedbackPrContext | undefined>,
-  classification: Annotation<FeedbackClassification | undefined>,
-  updatedLessonsFile: Annotation<string | undefined>,
-  updatedRegressionFile: Annotation<string | undefined>,
-  improvementPrUrl: Annotation<string | undefined>,
+const FeedbackStateSchema = new StateSchema({
+  comment: z.custom<ReviewComment>(),
+  humanReply: z.string(),
+  pr: z.custom<FeedbackPrContext>().optional(),
+  classification: FeedbackClassificationSchema.optional(),
+  updatedLessonsFile: z.string().optional(),
+  updatedRegressionFile: z.string().optional(),
+  improvementPrUrl: z.string().optional(),
 });
 
-type FeedbackState = typeof FeedbackStateAnnotation.State;
+type FeedbackState = typeof FeedbackStateSchema.State;
 
 const renderLessonEntry = ({
   comment,
@@ -141,7 +142,7 @@ export const buildFeedbackGraph = (deps: FeedbackGraphDependencies) => {
   const routeAfterLesson = (state: FeedbackState) =>
     state.pr ? "record_regression_case" : "open_improvement_pr";
 
-  return new StateGraph(FeedbackStateAnnotation)
+  return new StateGraph(FeedbackStateSchema)
     .addNode("classify_reply", classifyReply)
     .addNode("record_lesson", recordLesson)
     .addNode("record_regression_case", recordRegressionCase)

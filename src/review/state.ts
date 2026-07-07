@@ -1,44 +1,40 @@
-import { Annotation } from "@langchain/langgraph";
+import { ReducedValue, StateSchema } from "@langchain/langgraph";
+import { z } from "zod";
 
 import type { Redaction } from "../diff/redact";
 import type { PullRequest, PullRequestMetadata } from "../diff/types";
-import type { DocsImpact, ReviewComment, ValidatedComment } from "./types";
+import {
+  DocsImpactSchema,
+  ReviewCommentSchema,
+  ValidatedCommentSchema,
+  type ReviewComment,
+} from "./types";
 
-const appendComments = (
-  existing: ReviewComment[],
-  incoming: ReviewComment[],
-): ReviewComment[] => existing.concat(incoming);
-
-const lastWriteWins = <T>(_previous: T, next: T): T => next;
-const emptyList = <T>() => ({
-  reducer: lastWriteWins<T[]>,
-  default: (): T[] => [],
-});
-
-export const ReviewStateAnnotation = Annotation.Root({
+export const ReviewStateSchema = new StateSchema({
   /** Raw inputs; ingest clears rawDiff after redaction so secrets don't linger in state. */
-  rawDiff: Annotation<string>,
-  metadata: Annotation<PullRequestMetadata>,
+  rawDiff: z.string(),
+  metadata: z.custom<PullRequestMetadata>(),
 
   /** Parsed, redacted pull request — the only view of the code downstream nodes see. */
-  pr: Annotation<PullRequest>,
-  redactions: Annotation<Redaction[]>(emptyList<Redaction>()),
+  pr: z.custom<PullRequest>(),
+  redactions: z.custom<Redaction[]>().default(() => []),
 
-  /** Reviewers run in parallel and each append their draft comments. */
-  draftComments: Annotation<ReviewComment[]>({
-    reducer: appendComments,
-    default: () => [],
-  }),
-  docsImpact: Annotation<DocsImpact | undefined>,
+  /** Reviewers run in parallel and each append their draft comments — the graph's only merged channel. */
+  draftComments: new ReducedValue(
+    z.array(ReviewCommentSchema).default(() => []),
+    {
+      reducer: (existing: ReviewComment[], incoming: ReviewComment[]) =>
+        existing.concat(incoming),
+    },
+  ),
+  docsImpact: DocsImpactSchema.optional(),
 
   /** Validator subagent output. */
-  validatedComments:
-    Annotation<ValidatedComment[]>(emptyList<ValidatedComment>()),
-  droppedComments:
-    Annotation<ValidatedComment[]>(emptyList<ValidatedComment>()),
+  validatedComments: z.array(ValidatedCommentSchema).default(() => []),
+  droppedComments: z.array(ValidatedCommentSchema).default(() => []),
 
-  reviewUrl: Annotation<string | undefined>,
+  reviewUrl: z.string().optional(),
 });
 
-export type ReviewState = typeof ReviewStateAnnotation.State;
-export type ReviewStateUpdate = typeof ReviewStateAnnotation.Update;
+export type ReviewState = typeof ReviewStateSchema.State;
+export type ReviewStateUpdate = typeof ReviewStateSchema.Update;
