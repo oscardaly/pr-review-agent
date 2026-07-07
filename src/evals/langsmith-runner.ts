@@ -1,3 +1,5 @@
+import { execSync } from "node:child_process";
+
 import { Client } from "langsmith";
 import { evaluate } from "langsmith/evaluation";
 
@@ -59,9 +61,21 @@ const scoreEvaluator = (args: {
     args.outputs as unknown as EvalOutputs,
   );
 
+/** Experiments become comparable over time when stamped with what produced them. */
+const currentGitCommit = (): string | undefined => {
+  try {
+    return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim();
+  } catch {
+    return process.env.GITHUB_SHA?.slice(0, 7);
+  }
+};
+
 export const runOnLangSmith = async (): Promise<void> => {
+  const config = loadConfig();
   const client = new Client();
-  await syncDataset(client, await loadEvalDataset(loadConfig().knowledgePath));
+  await syncDataset(client, await loadEvalDataset(config.knowledgePath));
   const graph = await buildEvalGraph();
 
   const reviewTarget = async (inputs: KeyValueMap): Promise<KeyValueMap> =>
@@ -76,6 +90,7 @@ export const runOnLangSmith = async (): Promise<void> => {
     client,
     experimentPrefix: "pr-review-agent",
     evaluators: [scoreEvaluator],
+    metadata: { model: config.model, commit: currentGitCommit() ?? "unknown" },
   });
   console.log(
     `Experiment complete — see the "${DATASET_NAME}" dataset in LangSmith.`,

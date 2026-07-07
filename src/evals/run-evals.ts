@@ -31,7 +31,8 @@ const runLocally = async (): Promise<void> => {
   );
 };
 
-if (process.env.LANGSMITH_API_KEY) {
+// EVAL_LOCAL=1 forces the local runner even when a LangSmith key is set.
+if (process.env.LANGSMITH_API_KEY && process.env.EVAL_LOCAL !== "1") {
   await runOnLangSmith();
 } else {
   await runLocally();
