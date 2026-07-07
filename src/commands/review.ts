@@ -1,4 +1,6 @@
-import { readFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 
 import type { PullRequestMetadata } from "../diff/types";
 import { AGENT_NAME } from "../persona";
@@ -30,17 +32,27 @@ export const runReviewCommand = async (
   diffPath: string,
   metadataPath: string,
 ): Promise<void> => {
+  const readInput = (path: string, flag: string): Promise<string> =>
+    readFile(path, "utf-8").catch(() => {
+      throw new Error(
+        `Could not read ${path} — pass ${flag} <path>, or run \`make demo\` for the bundled sample PR.`,
+      );
+    });
   const [rawDiff, metadataJson] = await Promise.all([
-    readFile(diffPath, "utf-8"),
-    readFile(metadataPath, "utf-8"),
+    readInput(diffPath, "--diff"),
+    readInput(metadataPath, "--pr"),
   ]);
   const metadata = JSON.parse(metadataJson) as PullRequestMetadata;
 
   const graph = buildReviewGraph(await buildReviewDependencies());
+  // Caller-supplied so the run is addressable later: the feedback command
+  // attaches the human verdict to this exact trace via createFeedback.
+  const runId = randomUUID();
   const stream = await graph.stream(
     { rawDiff, metadata },
     {
       streamMode: "updates",
+      runId,
       runName: `pr-review #${metadata.number}`,
       tags: ["pr-review-agent"],
       metadata: {
@@ -54,12 +66,26 @@ export const runReviewCommand = async (
   console.log(
     `${AGENT_NAME} is reviewing PR #${metadata.number}: ${metadata.title}\n`,
   );
+  let reviewUrl: string | undefined;
   for await (const update of stream) {
     for (const [nodeName, nodeUpdate] of Object.entries(update)) {
+      const stateUpdate = nodeUpdate as Partial<ReviewState>;
+      reviewUrl = stateUpdate.reviewUrl ?? reviewUrl;
       console.log(
-        `  ◆ ${nodeName.padEnd(22)} ${describeUpdate(nodeName, nodeUpdate as Partial<ReviewState>)}`,
+        `  ◆ ${nodeName.padEnd(22)} ${describeUpdate(nodeName, stateUpdate)}`,
       );
     }
   }
+  if (reviewUrl) {
+    await writeFile(
+      join(dirname(reviewUrl), "run.json"),
+      JSON.stringify({ runId, prNumber: metadata.number }, null, 2),
+    );
+  }
   console.log(`\n${AGENT_NAME}'s review is ready.`);
+  if (process.env.LANGSMITH_TRACING === "true") {
+    console.log(
+      `LangSmith run id: ${runId} — set "reviewRunId" in a feedback reply to attach the human verdict to this trace.`,
+    );
+  }
 };

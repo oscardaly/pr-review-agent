@@ -38,4 +38,6 @@ export type FeedbackInput = {
   comment: ReviewComment;
   humanReply: string;
   pr?: FeedbackPrContext;
+  /** LangSmith run id of the original review (printed by the review command) — links the verdict to the trace. */
+  reviewRunId?: string;
 };
