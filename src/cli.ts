@@ -10,22 +10,38 @@ Usage:
   bun src/cli.ts review    [--diff <path>] [--pr <path>]    Review a pull request diff
   bun src/cli.ts feedback  [--reply <path>]                 Process a human reply to a review comment
   bun src/cli.ts bootstrap [--repo <path>]                  Draft the knowledge-base docs from a repository
+  bun src/cli.ts --help                                     Show this message
 `;
 
-const { positionals, values } = parseArgs({
-  args: process.argv.slice(2),
-  allowPositionals: true,
-  options: {
-    diff: { type: "string", default: "fixtures/sample-pr.diff" },
-    pr: { type: "string", default: "fixtures/sample-pr.json" },
-    reply: { type: "string", default: "fixtures/sample-reply.json" },
-    repo: { type: "string", default: "." },
-  },
-});
+const parseCliArgs = () => {
+  try {
+    return parseArgs({
+      args: process.argv.slice(2),
+      allowPositionals: true,
+      options: {
+        diff: { type: "string", default: "fixtures/sample-pr.diff" },
+        pr: { type: "string", default: "fixtures/sample-pr.json" },
+        reply: { type: "string", default: "fixtures/sample-reply.json" },
+        repo: { type: "string", default: "." },
+        help: { type: "boolean", short: "h", default: false },
+      },
+    });
+  } catch (error) {
+    console.error(`${error instanceof Error ? error.message : error}\n`);
+    console.log(USAGE);
+    process.exit(1);
+  }
+};
+
+const { positionals, values } = parseCliArgs();
 
 const command = positionals[0];
 
 const dispatchCommand = async (): Promise<void> => {
+  if (values.help) {
+    console.log(USAGE);
+    return;
+  }
   switch (command) {
     case "review":
       return runReviewCommand(values.diff, values.pr);

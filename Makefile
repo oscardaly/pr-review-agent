@@ -24,4 +24,5 @@ docker-build:
 	docker build -t pr-review-agent .
 
 docker-demo:
+	@test -f .env || (echo "No .env found — run 'make setup' and add a model key first." && exit 1)
 	docker run --rm --env-file .env pr-review-agent
