@@ -76,7 +76,8 @@ export const runReviewCommand = async (
       );
     }
   }
-  if (reviewUrl) {
+  // With the REST client the reviewUrl is a github.com link, not a directory.
+  if (reviewUrl && !reviewUrl.startsWith("http")) {
     await writeFile(
       join(dirname(reviewUrl), "run.json"),
       JSON.stringify({ runId, prNumber: metadata.number }, null, 2),
