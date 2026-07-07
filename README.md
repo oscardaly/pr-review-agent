@@ -120,11 +120,13 @@ One sentence each — the full reasoning lives in [DESIGN.md](DESIGN.md).
 ## What I'd improve with more time
 
 1. **Finish the GitHub loop** — reviews already post inline to real PRs; next is reply webhooks triggering the feedback graph automatically, and improvement PRs on real branches.
-2. **Real semgrep** against a checked-out worktree, with the diff used to filter findings to changed lines.
-3. **LLM-as-judge evaluator** for comment _quality_ (tone, actionability), complementing the keyword evaluators.
-4. **Full-file context** — reviewers see hunks; surrounding file content would cut false positives at the source.
-5. **Checkpointing** (LangGraph persistence) so a big review resumes mid-run across process restarts — and unlocks an `interrupt()` approval gate before publishing.
-6. **A team dashboard** — review history and precision trends from the eval experiments, as a Next.js front end over a thin API wrapping the graph.
+2. **Join the conversation, not just start it** — read the PR's existing review comments first and reply in-thread where Leo agrees or disagrees (with his reasons), instead of opening a parallel review that may repeat what a human already said.
+3. **Re-review mode** — when new commits land after a review, diff against the reviewed state, check which comments were addressed, and judge each fix on its own merits: resolved, partially resolved (with what remains), or a fix that introduces a new problem.
+4. **Real semgrep** against a checked-out worktree, with the diff used to filter findings to changed lines.
+5. **LLM-as-judge evaluator** for comment _quality_ (tone, actionability), complementing the keyword evaluators.
+6. **Full-file context** — reviewers see hunks; surrounding file content would cut false positives at the source.
+7. **Checkpointing** (LangGraph persistence) so a big review resumes mid-run across process restarts — and unlocks an `interrupt()` approval gate before publishing.
+8. **A team dashboard** — review history and precision trends from the eval experiments, as a Next.js front end over a thin API wrapping the graph.
 
 ## Repo layout
 
