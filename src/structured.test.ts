@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { FakeListChatModel } from "@langchain/core/utils/testing";
 import { z } from "zod";
 
-import { invokeStructured } from "./structured";
+import { enableNativeStructuredOutput, invokeStructured } from "./structured";
 
 const VerdictSchema = z.object({
   verdict: z.enum(["keep", "drop"]),
@@ -64,5 +64,28 @@ describe("invokeStructured", () => {
     expect(
       invokeStructured(model, VerdictSchema, "system", "user"),
     ).rejects.toThrow("Failed to get valid structured output");
+  });
+
+  test("routes to provider-native withStructuredOutput for opted-in models", async () => {
+    class NativeCapableModel extends FakeListChatModel {
+      override withStructuredOutput = (() => ({
+        invoke: async () => ({ verdict: "keep", confidence: 1 }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      })) as any;
+    }
+    const model = enableNativeStructuredOutput(
+      new NativeCapableModel({
+        responses: ["not JSON — the native path must never parse text"],
+      }),
+    );
+
+    const result = await invokeStructured(
+      model,
+      VerdictSchema,
+      "system",
+      "user",
+    );
+
+    expect(result).toEqual({ verdict: "keep", confidence: 1 });
   });
 });

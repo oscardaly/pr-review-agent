@@ -5,6 +5,7 @@ import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 
 import type { AgentConfig } from "./config";
 import { HashEmbeddings } from "./rag/hash-embeddings";
+import { enableNativeStructuredOutput } from "./structured";
 
 const NO_PROVIDER_MESSAGE = [
   "No model provider configured.",
@@ -14,21 +15,25 @@ const NO_PROVIDER_MESSAGE = [
 
 export const createChatModel = (config: AgentConfig): BaseChatModel => {
   if (config.openaiApiKey) {
-    return new ChatOpenAI({
-      model: config.model,
-      apiKey: config.openaiApiKey,
-      temperature: 0,
-      configuration: config.openaiBaseUrl
-        ? { baseURL: config.openaiBaseUrl }
-        : undefined,
-    });
+    return enableNativeStructuredOutput(
+      new ChatOpenAI({
+        model: config.model,
+        apiKey: config.openaiApiKey,
+        temperature: 0,
+        configuration: config.openaiBaseUrl
+          ? { baseURL: config.openaiBaseUrl }
+          : undefined,
+      }),
+    );
   }
   if (config.anthropicApiKey) {
-    return new ChatAnthropic({
-      model: config.model,
-      apiKey: config.anthropicApiKey,
-      temperature: 0,
-    });
+    return enableNativeStructuredOutput(
+      new ChatAnthropic({
+        model: config.model,
+        apiKey: config.anthropicApiKey,
+        temperature: 0,
+      }),
+    );
   }
   throw new Error(NO_PROVIDER_MESSAGE);
 };

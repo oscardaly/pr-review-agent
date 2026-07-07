@@ -24,12 +24,40 @@ const stripCodeFence = (text: string): string => {
 const parseResponse = <T>(schema: z.ZodType<T>, raw: string): T =>
   schema.parse(JSON.parse(stripCodeFence(raw)));
 
+const NATIVE_STRUCTURED_OUTPUT_MODELS = new WeakSet<BaseChatModel>();
+
 /**
- * Prompt-based structured output: works identically across real providers and
- * the fake chat models used in tests, at the cost of one retry on bad JSON.
- * (Provider-native tool-calling would be more robust but is not fakeable.)
+ * Opt a model into provider-native structured output. Called where real
+ * providers are constructed (src/models.ts) — an explicit decision at the
+ * composition root beats a capability heuristic, because test fakes inherit
+ * a text-parsing withStructuredOutput from the base class that would
+ * otherwise be picked up by accident.
  */
-export const invokeStructured = async <T>(
+export const enableNativeStructuredOutput = <M extends BaseChatModel>(
+  model: M,
+): M => {
+  NATIVE_STRUCTURED_OUTPUT_MODELS.add(model);
+  return model;
+};
+
+const supportsNativeStructuredOutput = (model: BaseChatModel): boolean =>
+  NATIVE_STRUCTURED_OUTPUT_MODELS.has(model);
+
+const invokeWithNativeStructuredOutput = <T>(
+  model: BaseChatModel,
+  schema: z.ZodType<T>,
+  systemPrompt: string,
+  userPrompt: string,
+  config?: RunnableConfig,
+): Promise<T> =>
+  model
+    .withStructuredOutput(schema)
+    .invoke(
+      [new SystemMessage(systemPrompt), new HumanMessage(userPrompt)],
+      config,
+    ) as Promise<T>;
+
+const invokeWithPromptParsing = async <T>(
   model: BaseChatModel,
   schema: z.ZodType<T>,
   systemPrompt: string,
@@ -59,3 +87,27 @@ export const invokeStructured = async <T>(
     `Failed to get valid structured output after ${MAX_PARSE_ATTEMPTS} attempts: ${lastError}`,
   );
 };
+
+/**
+ * Layered structured output: provider-native withStructuredOutput (the
+ * docs-recommended path — json_schema mode by default, supported by the
+ * OpenAI-compatible gateways too) whenever the model can bind tools, falling
+ * back to prompt + Zod parse with one retry for models that can't — which is
+ * exactly what keeps the scripted test fakes working unchanged.
+ */
+export const invokeStructured = <T>(
+  model: BaseChatModel,
+  schema: z.ZodType<T>,
+  systemPrompt: string,
+  userPrompt: string,
+  config?: RunnableConfig,
+): Promise<T> =>
+  supportsNativeStructuredOutput(model)
+    ? invokeWithNativeStructuredOutput(
+        model,
+        schema,
+        systemPrompt,
+        userPrompt,
+        config,
+      )
+    : invokeWithPromptParsing(model, schema, systemPrompt, userPrompt, config);
