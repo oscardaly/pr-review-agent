@@ -30,7 +30,8 @@ const parseThreshold = (raw: string): number => {
 export const loadConfig = (
   env: NodeJS.ProcessEnv = process.env,
 ): AgentConfig => ({
-  model: env.PR_AGENT_MODEL ?? defaultModelFor(env),
+  // `||` not `??`: CI passes unset workflow vars through as empty strings.
+  model: env.PR_AGENT_MODEL || defaultModelFor(env),
   openaiApiKey: env.OPENAI_API_KEY,
   openaiBaseUrl: env.OPENAI_BASE_URL,
   anthropicApiKey: env.ANTHROPIC_API_KEY,

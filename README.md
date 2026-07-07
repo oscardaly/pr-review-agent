@@ -53,6 +53,10 @@ Leo is reviewing PR #42: Add donation export endpoint and CLI log levels
 
 Docker: `make docker-build && make docker-demo`.
 
+## Run Leo on your PRs
+
+This repo ships `.github/workflows/leo-review.yml`: Leo reviews **every PR automatically** and can be summoned on demand by commenting **`/leo review`**. Reviews are posted as real GitHub reviews with **line-anchored inline comments** — a fetch-based REST client behind the same `GithubClient` interface as the demo's filesystem stub (comments that can't be anchored fold into the review body, and the whole review falls back to body-only rather than being lost). To adopt it in any repo: copy the workflow file, set one model-key secret (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`), and optionally a `PR_AGENT_MODEL` variable and `LANGSMITH_API_KEY` secret for traces. Leo's own code and knowledge always run from the default branch — the PR under review is only read as a diff, never executed. And yes: this repo dogfoods it. Leo reviews PRs to Leo.
+
 To point it at another repo/company: `PR_AGENT_USER_DOCS_PATH=<their docs>`, replace `knowledge/*.md` with their guides — or have the agent draft them from the codebase itself: `bun src/cli.ts bootstrap --repo ../some-repo`.
 
 ## The graph
@@ -129,7 +133,7 @@ With `LANGSMITH_API_KEY` it runs as a LangSmith experiment; without, it prints a
 
 ## What I'd improve with more time
 
-1. **Real GitHub integration** — the `GithubClient` interface is Octokit-shaped on purpose: post line-anchored review comments, listen for reply webhooks to trigger the feedback graph automatically, open the improvement PR with a real branch.
+1. **Finish the GitHub integration** — reviews already post to real PRs with inline comments (see "Run Leo on your PRs"); what remains is listening for reply webhooks to trigger the feedback graph automatically, and opening the improvement PR with a real branch instead of the filesystem proposal.
 2. **Native structured output** per provider, behind the existing `invokeStructured` seam.
 3. **Real semgrep** against a checked-out worktree, with the diff used to filter findings to changed lines.
 4. **LLM-as-judge evaluator** for comment _quality_ (tone, actionability), not just recall/precision of categories — plus a regression suite built from every rejected comment.
