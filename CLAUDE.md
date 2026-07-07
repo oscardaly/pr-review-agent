@@ -28,7 +28,7 @@ bun src/cli.ts bootstrap --repo <path>   # Draft guideline docs from a target re
 - `src/diff/` — unified-diff parser, secret/PII redaction, prompt formatting.
 - `src/persona.ts` — Leo's name, sign-off, and voice rules, defined once. Prompts, rendered reviews, and the CLI all read from here; never inline persona text elsewhere.
 - `src/wiring.ts` — the only place real implementations are chosen. The graph takes `{ model, knowledgeBase, github, semgrepScanner, config }` at build time; everything is injected.
-- `knowledge/` — the guideline docs (RAG source), `skills/` (dispositions injected whole into prompts: ponytail for suggestion code, review-critic for validation), `learned/` (lessons from rejected comments).
+- `knowledge/` — the guideline docs (RAG source), `skills/` (dispositions injected whole into prompts: ponytail for suggestion code, review-critic for validation, threat-modelling for the security reviewer), `learned/` (lessons from rejected comments).
 
 ### Load-bearing design rules
 

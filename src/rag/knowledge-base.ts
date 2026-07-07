@@ -29,6 +29,7 @@ export type KnowledgeBase = {
   learnedLessons: () => string;
   codeWritingSkill: () => string;
   reviewValidationSkill: () => string;
+  threatModellingSkill: () => string;
 };
 
 const TOPIC_BY_FILENAME: Record<string, GuidelineTopic> = {
@@ -92,15 +93,22 @@ export const loadKnowledgeBase = async (
   knowledgePath: string,
   embeddings: Embeddings,
 ): Promise<KnowledgeBase> => {
-  const [chunks, documentationLinks, lessons, codeWritingSkill, reviewCritic] =
-    await Promise.all([
-      loadGuidelineChunks(knowledgePath),
-      loadDocumentationLinks(knowledgePath),
-      loadLearnedLessons(knowledgePath),
-      // Vendored from https://github.com/DietrichGebert/ponytail (MIT) — governs suggestion code.
-      loadSkill(knowledgePath, "ponytail.md"),
-      loadSkill(knowledgePath, "review-critic.md"),
-    ]);
+  const [
+    chunks,
+    documentationLinks,
+    lessons,
+    codeWritingSkill,
+    reviewCritic,
+    threatModelling,
+  ] = await Promise.all([
+    loadGuidelineChunks(knowledgePath),
+    loadDocumentationLinks(knowledgePath),
+    loadLearnedLessons(knowledgePath),
+    // Vendored from https://github.com/DietrichGebert/ponytail (MIT) — governs suggestion code.
+    loadSkill(knowledgePath, "ponytail.md"),
+    loadSkill(knowledgePath, "review-critic.md"),
+    loadSkill(knowledgePath, "threat-modelling.md"),
+  ]);
   const vectorStore = await MemoryVectorStore.fromDocuments(chunks, embeddings);
 
   return {
@@ -113,5 +121,6 @@ export const loadKnowledgeBase = async (
     learnedLessons: () => lessons,
     codeWritingSkill: () => codeWritingSkill,
     reviewValidationSkill: () => reviewCritic,
+    threatModellingSkill: () => threatModelling,
   };
 };

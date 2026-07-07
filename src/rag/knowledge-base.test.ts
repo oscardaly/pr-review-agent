@@ -105,4 +105,17 @@ describe("loadKnowledgeBase", () => {
     expect(reviewValidationSkill).toContain("## False-positive taxonomy");
     expect(reviewValidationSkill).toContain("## The quality bar");
   });
+
+  test("serves the threat-modelling skill", async () => {
+    const knowledgeBase = await loadKnowledgeBase(
+      knowledgePath,
+      new HashEmbeddings(),
+    );
+
+    const threatModellingSkill = knowledgeBase.threatModellingSkill();
+
+    expect(threatModellingSkill).toContain("# Threat Modelling");
+    expect(threatModellingSkill).toContain("## The four questions");
+    expect(threatModellingSkill).toContain("## STRIDE over the changed surface");
+  });
 });

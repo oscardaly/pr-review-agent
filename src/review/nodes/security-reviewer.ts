@@ -12,8 +12,9 @@ import {
 const SECURITY_FOCUS = [
   "Focus on OWASP Top 10 risks in the added code.",
   "You are given the output of a semgrep static-analysis scan: triage each hit (explain the risk, give a concrete fix, keep its OWASP category in the comment body),",
-  "then look for OWASP issues the scanner cannot catch (missing auth checks, IDOR, trust in client-supplied fields).",
-  "Use category slugs like injection, secrets, xss, transport, auth, access-control, ssrf.",
+  "then look for OWASP issues the scanner cannot catch (missing auth checks, IDOR, trust in client-supplied fields),",
+  "and apply the threat-modelling skill to any new attack surface the diff introduces — a clean-looking diff that adds an unguarded trust boundary is still a finding.",
+  "Use category slugs like injection, secrets, xss, transport, auth, access-control, ssrf, trust-boundary.",
 ].join(" ");
 
 /**
@@ -33,6 +34,9 @@ export const makeSecurityReviewer =
 
     const userPrompt = [
       `Semgrep scan results (JSON):\n${semgrepReport}`,
+      "",
+      "Threat-modelling skill (governs how you assess new attack surface in this diff):",
+      deps.knowledgeBase.threatModellingSkill() || "(none installed)",
       "",
       reviewerUserPrompt(
         state.pr,

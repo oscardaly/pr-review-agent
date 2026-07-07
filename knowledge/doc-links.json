@@ -35,6 +35,11 @@
     "topics": ["security"]
   },
   {
+    "title": "OWASP — Threat Modeling",
+    "url": "https://owasp.org/www-community/Threat_Modeling",
+    "topics": ["security"]
+  },
+  {
     "title": "OWASP Cheat Sheet — SQL Injection Prevention",
     "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
     "topics": ["security"]
