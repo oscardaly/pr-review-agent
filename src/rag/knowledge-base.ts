@@ -112,10 +112,14 @@ export const loadKnowledgeBase = async (
   const vectorStore = await MemoryVectorStore.fromDocuments(chunks, embeddings);
 
   return {
+    // asRetriever (not raw similaritySearch) so each retrieval is a traced retriever run in LangSmith.
     retrieveGuidelines: (topics, query, k = DEFAULT_RETRIEVAL_COUNT) =>
-      vectorStore.similaritySearch(query, k, (document) =>
-        topics.includes(document.metadata.topic),
-      ),
+      vectorStore
+        .asRetriever({
+          k,
+          filter: (document) => topics.includes(document.metadata.topic),
+        })
+        .invoke(query),
     documentationLinksFor: (topic) =>
       documentationLinks.filter((link) => link.topics.includes(topic)),
     learnedLessons: () => lessons,

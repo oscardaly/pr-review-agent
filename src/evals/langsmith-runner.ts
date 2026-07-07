@@ -13,24 +13,39 @@ import { buildEvalGraph, runExampleThroughGraph } from "./run-graph";
 
 const DATASET_NAME = "pr-review-agent-evals";
 
-const ensureDataset = async (
+/**
+ * Idempotent append, not create-once: regression cases recorded by the
+ * feedback graph after the dataset first exists must still reach LangSmith,
+ * or "the dataset grows itself" would only be true locally.
+ */
+const syncDataset = async (
   client: Client,
   examples: EvalExample[],
 ): Promise<void> => {
-  if (await client.hasDataset({ datasetName: DATASET_NAME })) return;
-  const dataset = await client.createDataset(DATASET_NAME, {
-    description:
-      "PR diffs with expected review outcomes for the pr-review-agent",
-  });
-  await client.createExamples({
-    datasetId: dataset.id,
-    inputs: examples.map((example) => ({
-      diff: example.diff,
-      metadata: example.metadata,
+  const dataset = (await client.hasDataset({ datasetName: DATASET_NAME }))
+    ? await client.readDataset({ datasetName: DATASET_NAME })
+    : await client.createDataset(DATASET_NAME, {
+        description:
+          "PR diffs with expected review outcomes for the pr-review-agent",
+      });
+
+  const existingNames = new Set<string>();
+  for await (const example of client.listExamples({ datasetId: dataset.id })) {
+    existingNames.add(String(example.metadata?.name ?? ""));
+  }
+
+  const newExamples = examples.filter(
+    (example) => !existingNames.has(example.name),
+  );
+  if (newExamples.length === 0) return;
+  await client.createExamples(
+    newExamples.map((example) => ({
+      dataset_id: dataset.id,
+      inputs: { diff: example.diff, metadata: example.metadata },
+      outputs: { ...example.expected },
+      metadata: { name: example.name },
     })),
-    outputs: examples.map((example) => ({ ...example.expected })),
-    metadata: examples.map((example) => ({ name: example.name })),
-  });
+  );
 };
 
 type KeyValueMap = Record<string, unknown>;
@@ -46,7 +61,7 @@ const scoreEvaluator = (args: {
 
 export const runOnLangSmith = async (): Promise<void> => {
   const client = new Client();
-  await ensureDataset(client, await loadEvalDataset(loadConfig().knowledgePath));
+  await syncDataset(client, await loadEvalDataset(loadConfig().knowledgePath));
   const graph = await buildEvalGraph();
 
   const reviewTarget = async (inputs: KeyValueMap): Promise<KeyValueMap> =>

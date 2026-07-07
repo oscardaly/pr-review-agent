@@ -19,16 +19,19 @@ Give Leo a diff and he:
 
 ## Quickstart
 
+Requires [Bun](https://bun.sh) ≥ 1.3 (`curl -fsSL https://bun.sh/install | bash`) — or skip straight to Docker below.
+
 ```bash
 git clone git@github.com:oscardaly/pr-review-agent.git
 cd pr-review-agent
 make setup          # bun install + creates .env from .env.example
-# put an OPENAI_API_KEY (or ANTHROPIC_API_KEY, or AI-Gateway creds) in .env
+# put an OPENAI_API_KEY, an ANTHROPIC_API_KEY, or AI-Gateway creds in .env
+# (the model defaults to match whichever key you set — override with PR_AGENT_MODEL)
 # put a LANGSMITH_API_KEY in .env to get traces
 
 make demo           # review the bundled sample PR (3 files, several planted issues)
 make feedback       # process the bundled "you're wrong" reply → improvement PR proposal
-make eval           # run the eval dataset (LangSmith experiment, or locally without a key)
+make eval           # run the eval dataset (LangSmith experiment, or locally without a LangSmith key — a model key is still needed)
 ```
 
 **No API key handy?** `make test` runs the entire graph offline — the 39 unit/integration tests exercise every node with a scripted model, and the RAG layer runs on deterministic local embeddings.
@@ -114,7 +117,7 @@ With `LANGSMITH_API_KEY` it runs as a LangSmith experiment; without, it prints a
 
 **Suggested code follows the [ponytail](https://github.com/DietrichGebert/ponytail) skill** (MIT, vendored at `knowledge/skills/ponytail.md`). When a reviewer writes fix code in a `suggestion`, it climbs ponytail's ladder — does this need to exist, is it already in the diff, does the stdlib cover it, can it be one line — and never trades away validation, error handling, or security. The skill is injected whole into reviewer prompts (it's a disposition, not a lookup — retrieval would defeat its "active every response" contract) and loads from a plain markdown file, so a team can swap in their own code-writing skill without touching TypeScript. Two more skills follow the same pattern: `review-critic.md` governs how the validator judges drafts (accuracy first, then false-positive detection, severity calibration, actionability — "three legitimate findings beat fifteen where half are noise"), and `threat-modelling.md` gives the security reviewer a diff-scoped version of [OWASP threat modelling](https://owasp.org/www-community/Threat_Modeling) — the four questions plus STRIDE over each new surface, because guideline chunks pattern-match known-bad code while a threat-model frame catches the clean-looking diff that adds an unguarded trust boundary. Three skills, three dispositions, three consumers — all plain markdown, all swappable without touching TypeScript.
 
-**RAG choices.** The knowledge base is markdown chunked on `##` headings — each chunk is one complete rule, a semantic boundary a token splitter would cut through. Retrieval is topic-filtered cosine similarity over an in-memory store (LangChain v1 dropped the bundled one; ours is ~50 lines against the core `VectorStore` interface). Embeddings are provider-backed when a key exists, and fall back to deterministic hashed bag-of-words so tests, Docker builds, and keyless demos work offline. For a mini KB, keyword-overlap retrieval is honestly fine; the seam to swap in real embeddings (or pgvector) is one factory function.
+**RAG choices.** The knowledge base is markdown chunked on `##` headings — each chunk is one complete rule, a semantic boundary a token splitter would cut through. Retrieval is topic-filtered cosine similarity over an in-memory store, exposed via `asRetriever()` so every retrieval is a traced retriever run in LangSmith (LangChain v1 moved the bundled store to the `@langchain/classic` legacy-compat package; ours is ~50 lines against the core `VectorStore` interface instead of taking that dependency). Embeddings are provider-backed when a key exists, and fall back to deterministic hashed bag-of-words so tests, Docker builds, and keyless demos work offline. For a mini KB, keyword-overlap retrieval is honestly fine; the seam to swap in real embeddings (or pgvector) is one factory function — `createEmbeddings` in `src/models.ts`.
 
 **Structured output via prompt + Zod parse (with one retry)** instead of provider-native tool calling. Tradeoff made for provider-agnosticism (works identically through the AI Gateway, Anthropic, or a scripted fake in tests). Native tool calling is more robust at scale — it's the first thing I'd change for production, behind the same `invokeStructured` signature.
 

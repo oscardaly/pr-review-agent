@@ -19,8 +19,10 @@ const cosineSimilarity = (left: number[], right: number[]): number => {
 };
 
 /**
- * Minimal in-memory vector store (LangChain v1 dropped the bundled one).
- * Cosine similarity over embedded chunks — plenty for a mini knowledge base.
+ * Minimal in-memory vector store. LangChain v1 moved the bundled one to the
+ * @langchain/classic legacy-compat package; ~50 lines against the core
+ * VectorStore interface beats taking that dependency. Cosine similarity over
+ * embedded chunks — plenty for a mini knowledge base.
  */
 export class MemoryVectorStore extends VectorStore {
   declare FilterType: (document: DocumentInterface) => boolean;
