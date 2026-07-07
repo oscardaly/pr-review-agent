@@ -1,6 +1,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import type { RunnableConfig } from "@langchain/core/runnables";
+
 import { summarizeFiles } from "../../diff/format-diff";
 import { invokeStructured } from "../../structured";
 import type { ReviewGraphDependencies } from "../dependencies";
@@ -38,7 +40,10 @@ const loadUserDocuments = async (
 
 export const makeDocsReviewer =
   (deps: ReviewGraphDependencies) =>
-  async (state: ReviewState): Promise<ReviewStateUpdate> => {
+  async (
+    state: ReviewState,
+    config?: RunnableConfig,
+  ): Promise<ReviewStateUpdate> => {
     const documents = await loadUserDocuments(deps.config.userDocsPath);
     if (documents.length === 0) {
       return { docsImpact: { needsUpdate: false, items: [] } };
@@ -62,6 +67,7 @@ export const makeDocsReviewer =
       DocsImpactSchema,
       DOCS_SYSTEM_PROMPT,
       userPrompt,
+      config,
     );
     return { docsImpact };
   };

@@ -1,3 +1,5 @@
+import type { RunnableConfig } from "@langchain/core/runnables";
+
 import { invokeStructured } from "../../structured";
 import type { GuidelineTopic } from "../../rag/knowledge-base";
 import type { ReviewGraphDependencies } from "../dependencies";
@@ -19,7 +21,10 @@ type GuidelineReviewerSpec = {
 
 const makeGuidelineReviewer =
   (spec: GuidelineReviewerSpec, deps: ReviewGraphDependencies) =>
-  async (state: ReviewState): Promise<ReviewStateUpdate> => {
+  async (
+    state: ReviewState,
+    config?: RunnableConfig,
+  ): Promise<ReviewStateUpdate> => {
     const guidelines = await deps.knowledgeBase.retrieveGuidelines(
       spec.topics,
       retrievalQueryFor(state.pr),
@@ -35,6 +40,7 @@ const makeGuidelineReviewer =
         links,
         deps.knowledgeBase.codeWritingSkill(),
       ),
+      config,
     );
     return {
       draftComments: findings.comments.map((comment) => ({

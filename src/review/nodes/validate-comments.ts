@@ -1,3 +1,5 @@
+import type { RunnableConfig } from "@langchain/core/runnables";
+
 import { formatFileForPrompt } from "../../diff/format-diff";
 import { AGENT_NAME } from "../../persona";
 import { invokeStructured } from "../../structured";
@@ -37,6 +39,7 @@ const judgeComment = async (
   comment: ReviewComment,
   state: ReviewState,
   deps: ReviewGraphDependencies,
+  config?: RunnableConfig,
 ): Promise<ValidatedComment> => {
   const file = state.pr.files.find(
     (changedFile) => changedFile.path === comment.file,
@@ -62,6 +65,7 @@ const judgeComment = async (
     ValidationVerdictSchema,
     VALIDATOR_SYSTEM_PROMPT,
     userPrompt,
+    config,
   );
   return { ...comment, validation };
 };
@@ -69,10 +73,15 @@ const judgeComment = async (
 /** Subagent pass: every draft comment is independently cross-examined before publishing. */
 export const makeCommentValidator =
   (deps: ReviewGraphDependencies) =>
-  async (state: ReviewState): Promise<ReviewStateUpdate> => {
+  async (
+    state: ReviewState,
+    config?: RunnableConfig,
+  ): Promise<ReviewStateUpdate> => {
     const uniqueComments = deduplicate(state.draftComments);
     const judged = await Promise.all(
-      uniqueComments.map((comment) => judgeComment(comment, state, deps)),
+      uniqueComments.map((comment) =>
+        judgeComment(comment, state, deps, config),
+      ),
     );
 
     const isPublishable = (comment: ValidatedComment): boolean =>

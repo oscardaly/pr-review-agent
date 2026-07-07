@@ -4,6 +4,7 @@ import {
   SystemMessage,
   type BaseMessage,
 } from "@langchain/core/messages";
+import type { RunnableConfig } from "@langchain/core/runnables";
 import { z } from "zod";
 
 const MAX_PARSE_ATTEMPTS = 2;
@@ -33,6 +34,7 @@ export const invokeStructured = async <T>(
   schema: z.ZodType<T>,
   systemPrompt: string,
   userPrompt: string,
+  config?: RunnableConfig,
 ): Promise<T> => {
   const messages: BaseMessage[] = [
     new SystemMessage(`${systemPrompt}\n\n${formatInstructions(schema)}`),
@@ -40,7 +42,7 @@ export const invokeStructured = async <T>(
   ];
   let lastError: unknown;
   for (let attempt = 1; attempt <= MAX_PARSE_ATTEMPTS; attempt += 1) {
-    const response = await model.invoke(messages);
+    const response = await model.invoke(messages, config);
     try {
       return parseResponse(schema, String(response.content));
     } catch (error) {

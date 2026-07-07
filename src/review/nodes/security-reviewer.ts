@@ -1,3 +1,5 @@
+import type { RunnableConfig } from "@langchain/core/runnables";
+
 import { invokeStructured } from "../../structured";
 import { createSemgrepTool } from "../../tools/semgrep";
 import type { ReviewGraphDependencies } from "../dependencies";
@@ -23,7 +25,10 @@ const SECURITY_FOCUS = [
  */
 export const makeSecurityReviewer =
   (deps: ReviewGraphDependencies) =>
-  async (state: ReviewState): Promise<ReviewStateUpdate> => {
+  async (
+    state: ReviewState,
+    config?: RunnableConfig,
+  ): Promise<ReviewStateUpdate> => {
     const semgrepTool = createSemgrepTool(state.pr.files, deps.semgrepScanner);
     const semgrepReport = await semgrepTool.invoke({});
     const guidelines = await deps.knowledgeBase.retrieveGuidelines(
@@ -51,6 +56,7 @@ export const makeSecurityReviewer =
       DraftFindingsSchema,
       reviewerSystemPrompt("security", SECURITY_FOCUS),
       userPrompt,
+      config,
     );
     return {
       draftComments: findings.comments.map((comment) => ({

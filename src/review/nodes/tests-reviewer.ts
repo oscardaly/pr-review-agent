@@ -1,3 +1,5 @@
+import type { RunnableConfig } from "@langchain/core/runnables";
+
 import { invokeStructured } from "../../structured";
 import { createTestMappingTool } from "../../tools/test-mapping";
 import type { ReviewGraphDependencies } from "../dependencies";
@@ -24,7 +26,10 @@ const TESTS_FOCUS = [
  */
 export const makeTestsReviewer =
   (deps: ReviewGraphDependencies) =>
-  async (state: ReviewState): Promise<ReviewStateUpdate> => {
+  async (
+    state: ReviewState,
+    config?: RunnableConfig,
+  ): Promise<ReviewStateUpdate> => {
     const testMappingTool = createTestMappingTool(state.pr.files);
     const mappingReport = await testMappingTool.invoke({});
     const guidelines = await deps.knowledgeBase.retrieveGuidelines(
@@ -49,6 +54,7 @@ export const makeTestsReviewer =
       DraftFindingsSchema,
       reviewerSystemPrompt("tests", TESTS_FOCUS),
       userPrompt,
+      config,
     );
     return {
       draftComments: findings.comments.map((comment) => ({

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import type { RunnableConfig } from "@langchain/core/runnables";
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 
 import {
@@ -61,12 +62,16 @@ const renderLessonEntry = ({
   ].join("\n");
 
 export const buildFeedbackGraph = (deps: FeedbackGraphDependencies) => {
-  const classifyReply = async (state: FeedbackState) => ({
+  const classifyReply = async (
+    state: FeedbackState,
+    config?: RunnableConfig,
+  ) => ({
     classification: await invokeStructured(
       deps.model,
       FeedbackClassificationSchema,
       CLASSIFY_SYSTEM_PROMPT,
       `Comment:\n${JSON.stringify(state.comment, null, 2)}\n\nHuman reply:\n${state.humanReply}`,
+      config,
     ),
   });
 
