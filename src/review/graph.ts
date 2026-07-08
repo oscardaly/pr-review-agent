@@ -2,7 +2,7 @@ import type { RunnableConfig } from "@langchain/core/runnables";
 import { END, START, StateGraph } from "@langchain/langgraph";
 
 import type { ReviewGraphDependencies } from "./dependencies";
-import { hasReviewableChanges, ingestNode } from "./nodes/ingest";
+import { hasReviewableChanges, makeIngestNode } from "./nodes/ingest";
 import { makeDocsReviewer } from "./nodes/docs-reviewer";
 import {
   makeArchitectureReviewer,
@@ -59,7 +59,7 @@ export const buildReviewGraph = (deps: ReviewGraphDependencies) =>
   new StateGraph(ReviewStateSchema)
     // Applies to the non-reviewer nodes: reviewers catch their own failures below.
     .setNodeDefaults({ retryPolicy: { maxAttempts: 3 } })
-    .addNode("ingest", ingestNode)
+    .addNode("ingest", makeIngestNode(deps))
     .addNode(
       "style_reviewer",
       degradeOnFailure("style_reviewer", makeStyleReviewer(deps)),

@@ -48,6 +48,7 @@ export const makeSecurityReviewer =
         guidelines,
         links,
         deps.knowledgeBase.codeWritingSkill(),
+        state.ticket,
       ),
     ].join("\n");
 

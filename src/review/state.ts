@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import type { Redaction } from "../diff/redact";
 import type { PullRequest, PullRequestMetadata } from "../diff/types";
+import type { Ticket } from "../tools/ticket";
 import {
   DocsImpactSchema,
   ReviewCommentSchema,
@@ -18,6 +19,9 @@ export const ReviewStateSchema = new StateSchema({
   /** Parsed, redacted pull request — the only view of the code downstream nodes see. */
   pr: z.custom<PullRequest>(),
   redactions: z.custom<Redaction[]>().default(() => []),
+
+  /** The Linear ticket the PR references, when a ticket client is wired and the fetch succeeds. */
+  ticket: z.custom<Ticket>().optional(),
 
   /** Reviewers run in parallel and each append their draft comments — the graph's only merged channel. */
   draftComments: new ReducedValue(

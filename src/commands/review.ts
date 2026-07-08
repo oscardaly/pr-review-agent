@@ -14,7 +14,10 @@ const describeUpdate = (
 ): string => {
   switch (nodeName) {
     case "ingest":
-      return `parsed ${update.pr?.files.length ?? 0} file(s), redacted ${update.redactions?.length ?? 0} secret/PII value(s)`;
+      return (
+        `parsed ${update.pr?.files.length ?? 0} file(s), redacted ${update.redactions?.length ?? 0} secret/PII value(s)` +
+        (update.ticket ? ` · linked ticket ${update.ticket.identifier}` : "")
+      );
     case "docs_reviewer":
       return update.docsImpact?.needsUpdate
         ? `${update.docsImpact.items.length} document(s) need updating`

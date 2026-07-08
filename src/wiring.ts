@@ -5,6 +5,7 @@ import type { ReviewGraphDependencies } from "./review/dependencies";
 import type { FeedbackGraphDependencies } from "./feedback/graph";
 import { createFileSystemGithubClient, type GithubClient } from "./tools/github";
 import { createRestGithubClient } from "./tools/github-rest";
+import { createLinearTicketClient } from "./tools/linear-mcp";
 import { scanWithBuiltinRules } from "./tools/semgrep";
 
 /** Reviews post to the real GitHub API when CI provides a token + repo (see .github/workflows/leo-review.yml). */
@@ -27,6 +28,9 @@ export const buildReviewDependencies = async (
   ),
   github: createReviewGithubClient(config),
   semgrepScanner: scanWithBuiltinRules,
+  ticketClient: process.env.LINEAR_API_KEY
+    ? createLinearTicketClient({ apiKey: process.env.LINEAR_API_KEY })
+    : undefined,
   config,
 });
 

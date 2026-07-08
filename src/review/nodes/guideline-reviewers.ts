@@ -39,6 +39,7 @@ const makeGuidelineReviewer =
         guidelines,
         links,
         deps.knowledgeBase.codeWritingSkill(),
+        state.ticket,
       ),
       config,
     );
