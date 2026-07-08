@@ -11,6 +11,7 @@ Give Leo a diff and he:
 - reviews **style, architecture, security, tests, and docs** with five parallel reviewers over a markdown knowledge base (RAG) — security covers the OWASP Top 10 *and* the OWASP Top 10 for LLM Applications,
 - anchors reviewers in **deterministic tools first**: a semgrep scan seeds security, a test-mapping tool seeds the tests reviewer,
 - **redacts secrets/PII** before any model or trace sees the code,
+- pulls the **linked Linear ticket** over MCP (set `LINEAR_API_KEY`) and reviews the diff against its stated intent — via `@langchain/mcp-adapters`, so the integration is configuration, not a hand-written client,
 - sends every draft through a **validator subagent** — and **teaches instead of policing**: every published comment explains _why_ and ends with a 🎓 takeaway,
 - and **learns from rejection**: reply "you're wrong" and he opens a PR against his own knowledge base — recording the lesson *and* freezing the diff as an eval regression case so the mistake can never quietly return.
 
@@ -31,7 +32,7 @@ make feedback       # process the bundled "you're wrong" reply → improvement P
 make eval           # run the eval dataset (LangSmith experiment, or locally without a LangSmith key — a model key is still needed)
 ```
 
-**No API key handy?** `make test` runs the entire graph offline — the 48 unit/integration tests exercise every node with a scripted model, and the RAG layer runs on deterministic local embeddings.
+**No API key handy?** `make test` runs the entire graph offline — the 53 unit/integration tests exercise every node with a scripted model, and the RAG layer runs on deterministic local embeddings.
 
 The demo prints streamed node-by-node progress, then writes the review to `review-output/pr-42/review.md`:
 
@@ -126,7 +127,8 @@ One sentence each — the full reasoning lives in [DESIGN.md](DESIGN.md).
 5. **LLM-as-judge evaluator** for comment _quality_ (tone, actionability), complementing the keyword evaluators.
 6. **Full-file context** — reviewers see hunks; surrounding file content would cut false positives at the source.
 7. **Checkpointing** (LangGraph persistence) so a big review resumes mid-run across process restarts — and unlocks an `interrupt()` approval gate before publishing.
-8. **A team dashboard** — review history and precision trends from the eval experiments, as a Next.js front end over a thin API wrapping the graph.
+8. **More production context over MCP** — the Linear ticket integration is the template (`@langchain/mcp-adapters` makes each one configuration, not code): Sentry errors on the code being changed, PostHog feature-flag rollout state and usage volume for severity calibration, real coverage data to upgrade the tests reviewer's diff-only heuristic. Comments citing production reality, not just guidelines.
+9. **A team dashboard** — review history and precision trends from the eval experiments, as a Next.js front end over a thin API wrapping the graph.
 
 ## Repo layout
 
@@ -136,7 +138,7 @@ src/
   review/               state, graph, nodes (ingest → reviewers → validate → publish)
   feedback/             self-improvement graph
   rag/                  knowledge base, chunking, vector store, embeddings
-  tools/                semgrep + test-mapping tools, GitHub clients (filesystem + REST)
+  tools/                semgrep + test-mapping tools, GitHub clients (filesystem + REST), Linear MCP ticket client
   diff/                 unified-diff parser, redaction, prompt formatting
   evals/                dataset, regression cases, evaluators, local + LangSmith runners
   testing/              scripted chat model (order-independent fake)
