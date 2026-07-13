@@ -96,6 +96,12 @@ A rejection becomes a generalized lesson *and* an eval regression case, both shi
 
 Set `LANGSMITH_TRACING=true` + `LANGSMITH_API_KEY` and every run is traced end-to-end: the graph run (`pr-review #42`, tagged, with PR number/repo/author as metadata), each node, each retrieval (via `asRetriever`), each tool call, and every validator judgement. The feedback command attaches human verdicts to the original review run as LangSmith feedback. `make eval` maintains a `pr-review-agent-evals` dataset (idempotent sync — regression cases keep appending) and records experiments stamped with `{ model, commit }` for before/after comparison.
 
+**Can't see your traces?** Three gotchas, all discovered the hard way:
+
+- **EU-region account?** Set `LANGSMITH_ENDPOINT=https://eu.api.smith.langchain.com` — the SDK defaults to the US endpoint and every upload fails with `403 Forbidden`.
+- **Project looks missing in the UI?** The sidebar is scoped to an *Application*, and SDK-created tracing projects don't belong to one. Switch the Application dropdown (top of the sidebar) to **All applications** → Tracing.
+- **Project there but empty?** The default time filter is *Last 1 day* — widen it. Free-tier traces are retained for 14 days.
+
 ## Evals
 
 `src/evals/dataset.ts` has six curated diffs with expected outcomes — SQL injection, hardcoded API key, cryptic naming, `eval()` on user input, a stale-docs flag rename, and (importantly) a **clean refactor where the right answer is to stay quiet**. The dataset also **grows itself**: every rejection processed by the feedback graph adds a regression case. Four programmatic evaluators score each run:
@@ -129,6 +135,7 @@ One sentence each — the full reasoning lives in [DESIGN.md](DESIGN.md).
 7. **Checkpointing** (LangGraph persistence) so a big review resumes mid-run across process restarts — and unlocks an `interrupt()` approval gate before publishing.
 8. **More production context over MCP** — the Linear ticket integration is the template (`@langchain/mcp-adapters` makes each one configuration, not code): Sentry errors on the code being changed, PostHog feature-flag rollout state and usage volume for severity calibration, real coverage data to upgrade the tests reviewer's diff-only heuristic. Comments citing production reality, not just guidelines.
 9. **A team dashboard** — review history and precision trends from the eval experiments, as a Next.js front end over a thin API wrapping the graph.
+10. **Brand-consistency reviewer** — add a brand guidelines doc to the knowledge base and have Leo check that new components and design changes stay consistent with it (colours, typography, tone, component usage).
 
 ## Repo layout
 
