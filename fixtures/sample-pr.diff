@@ -21,7 +21,7 @@ new file mode 100644
 +  );
 +
 +  const rows = result.rows;
-+  await sgMail.send({ to: "exports@listaid.example", subject: "Export ready", text: `${rows.length} rows` });
++  await sgMail.send({ to: "exports@donorlist.example", subject: "Export ready", text: `${rows.length} rows` });
 +  return NextResponse.json({ rows, format });
 +};
 diff --git a/src/lib/exportHelpers.ts b/src/lib/exportHelpers.ts

@@ -1,6 +1,6 @@
 # Getting Started
 
-ListAid helps charity shops turn donated items into online listings.
+DonorList helps charity shops turn donated items into online listings.
 
 ## Installation
 

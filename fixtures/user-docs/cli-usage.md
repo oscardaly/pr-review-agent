@@ -1,6 +1,6 @@
 # CLI Usage
 
-The `listaid` CLI imports and exports listing data in bulk.
+The `donorlist` CLI imports and exports listing data in bulk.
 
 ## Flags
 
@@ -13,6 +13,6 @@ The `listaid` CLI imports and exports listing data in bulk.
 ## Examples
 
 ```bash
-listaid export --output ./exports --verbose
-listaid import ./listings.csv --dry-run
+donorlist export --output ./exports --verbose
+donorlist import ./listings.csv --dry-run
 ```

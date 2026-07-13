@@ -17,7 +17,7 @@ const stateWith = (title: string): ReviewState =>
       title,
       description: "Adds the export endpoint.",
       author: "sam-dev",
-      repository: "acme/listaid",
+      repository: "acme/donorlist",
     },
   }) as ReviewState;
 
